@@ -1,0 +1,162 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Oswald:wght@300;400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ===== Colors ===== */
+    --color-crickbroYellow: #F0C75E;
+    --color-crickbroPurple: #8b5cf6;
+
+    --color-primary: #0f3e3c;
+    --color-primary-dark: #072a27;
+    --color-primary-darker: #021b17;
+
+    --color-accent: #8b5cf6;
+    --color-accent-2: #60a5fa;
+    --color-warm: #F0C75E;
+    --color-ivory: #FFF9EC;
+
+    /* ===== Fonts ===== */
+    --font-oswald: "Oswald", sans-serif;
+    --font-inter: "Inter", sans-serif;
+  }
+
+  body {
+    font-family: var(--font-oswald);
+    background-color: var(--color-primary-darker);
+  }
+}
+
+/* Font helpers */
+.font-oswald {
+  font-family: var(--font-oswald);
+}
+
+.font-inter {
+  font-family: var(--font-inter);
+}
+
+@layer utilities {
+  /* ===== Text & BG Helpers ===== */
+  .text-crickbroYellow {
+    color: var(--color-crickbroYellow);
+  }
+
+  .bg-crickbroYellow {
+    background-color: var(--color-crickbroYellow);
+  }
+
+  .text-crickbroPurple {
+    color: var(--color-crickbroPurple);
+  }
+
+  .bg-crickbroPurple {
+    background-color: var(--color-crickbroPurple);
+  }
+
+  /* ===== Background Gradients ===== */
+  .bg-hero-gradient {
+    background: linear-gradient(
+      135deg,
+      var(--color-primary) 0%,
+      var(--color-primary-dark) 50%,
+      var(--color-primary-darker) 100%
+    );
+  }
+
+  .bg-accent-gradient {
+    background: linear-gradient(
+      90deg,
+      var(--color-accent) 0%,
+      var(--color-warm) 100%
+    );
+  }
+
+  /* ===== Buttons ===== */
+  .btn-primary {
+    @apply inline-flex items-center justify-center font-oswald uppercase tracking-wider px-8 py-3 rounded-full;
+    color: var(--color-primary-darker);
+    background: linear-gradient(90deg, var(--color-accent), var(--color-warm));
+    box-shadow: 0 8px 30px rgba(139, 92, 246, 0.12),
+                0 6px 18px rgba(240, 199, 94, 0.06);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-2 rounded-full border border-white/10 text-white text-sm;
+    transition: all .18s ease-in-out;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center px-3 py-2 rounded-md text-white/90;
+  }
+
+  .btn-circle {
+    @apply inline-flex items-center justify-center w-10 h-10 rounded-full text-white;
+    background: linear-gradient(90deg, var(--color-accent), var(--color-warm));
+  }
+
+  /* ===== Navigation ===== */
+  .nav-link {
+    @apply cursor-pointer transition-colors text-white/90;
+  }
+
+  .nav-link:hover {
+    color: var(--color-warm);
+  }
+
+  /* ===== Cards ===== */
+  .card-glass {
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.03));
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 1.5rem;
+    box-shadow: 0 14px 45px rgba(2, 27, 23, 0.30);
+  }
+
+  .accent-border {
+    border-image: linear-gradient(90deg, var(--color-accent), var(--color-warm)) 1;
+  }
+
+  .gradient-blob {
+    filter: blur(48px);
+    opacity: .65;
+  }
+
+  /* ===== Animations ===== */
+  .animate-slideDown {
+    animation: slideDown 0.3s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary-dark);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-darker);
+}
