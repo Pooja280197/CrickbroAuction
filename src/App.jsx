@@ -6,6 +6,7 @@ import MyProfile from '../src/pages/MyProfile'
 import AuctionDetails from './pages/AuctionDetails'
 import AuctionCards from './pages/AuctionCards'
 import { BrowserRouter,Routes,Route } from 'react-router-dom'
+import ScrollToTop from './components/ScrollToTop'
 
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
   return (
     <>
     <BrowserRouter>
+    <ScrollToTop/>
     <Routes>
       <Route exact path="/" element={<Home/>}/>
       <Route exact path="/auction" element={<AuctionCards/>}/>
