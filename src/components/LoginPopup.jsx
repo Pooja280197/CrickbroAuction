@@ -28,8 +28,30 @@ export default function LoginPopup() {
   
   // const [canResend, setCanResend] = useState(false);
   const inputsRef = useRef([]);
+  const hasHandledLogin = useRef(false);
+
   const loading = useSelector((state) => state.loading.sendOtp);
   const error = useSelector((state) => state.error.sendOtp);
+  const verifyData = useSelector((state) => state.data.verify);
+// const verifyLoading = useSelector((state) => state.loading.verify);
+
+
+useEffect(() => {
+  if (!verifyData?.token || hasHandledLogin.current) return;
+
+  hasHandledLogin.current = true;
+
+  if (afterLoginCallback) {
+    afterLoginCallback();
+    setAfterLoginCallback(null);
+  } else {
+    navigate("/");
+  }
+
+  closeLoginPopup();
+}, [verifyData, afterLoginCallback, navigate, closeLoginPopup]);
+
+
   //   const otpData = useSelector((state) => state.data.sendOtp);
 
   const handleChange = (e) => {
@@ -96,20 +118,24 @@ export default function LoginPopup() {
         payload: data,
       })
     );
-     setOtp(["", "", "", "", "", ""]);
-     setLoginDetails({ mobile: "", countryCode: "+91" });
+    //  setOtp(["", "", "", "", "", ""]);
+    //  setLoginDetails({ mobile: "", countryCode: "+91" });
     //  setIsLoggedIn(true)
    
-    if (afterLoginCallback) {
-      afterLoginCallback();
-      setAfterLoginCallback(null);
-    } else {
-      navigate("/");
-    }
-      closeLoginPopup();
+    // if (afterLoginCallback) {
+    //   afterLoginCallback();
+    //   setAfterLoginCallback(null);
+    // } else {
+    //   navigate("/");
+    // }
+    //   closeLoginPopup();
   };
 
+  
+
   if (!loginPopupOpen) return null;
+
+
 
   return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md px-4">
@@ -118,7 +144,7 @@ export default function LoginPopup() {
       {/* Close Button */}
       <button
         onClick={closeLoginPopup}
-        className="absolute top-4 right-4 z-20 btn-icon hover:text-crickbroYellow"
+        className="absolute top-4 right-4 z-20 btn-icon text-crickbroYellow"
       >
         <X size={22} />
       </button>

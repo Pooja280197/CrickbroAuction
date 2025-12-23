@@ -17,7 +17,7 @@ function App() {
     <Routes>
       <Route exact path="/" element={<Home/>}/>
       <Route exact path="/auction" element={<AuctionCards/>}/>
-      <Route exact path="/auction-details/:id" element={<AuctionDetails/>}/>
+      <Route exact path="/auction-details/:auctionId" element={<AuctionDetails/>}/>
       <Route exact path="/myProfile" element={<MyProfile/>}/>
     </Routes>
     </BrowserRouter>

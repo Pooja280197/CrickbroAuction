@@ -7,22 +7,22 @@ import LoginPopup from "./LoginPopup";
 import { useLoginPopup } from "../context/LoginPopupContext";
 import { useSelector } from "react-redux";
 
-
 const Header = () => {
   const navigate = useNavigate();
   const [showLogin, setShowLogin] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const data = useSelector((state) => state.data.verify);
-  const isLoggedIn = Boolean(data?.token);
+  const verifyData = useSelector((state) => state.data.verify);
 
- 
+  const isLoggedIn = Boolean(
+    verifyData?.token || localStorage.getItem("token")
+  );
 
   const navOptions = [
     { label: "Home", path: "/" },
     { label: "Auction", path: "/auction" },
-    { label: "Players", path: "#"},
+    { label: "Players", path: "#" },
     { label: "Blog", path: "#" },
   ];
 
@@ -37,7 +37,6 @@ const Header = () => {
     setMobileMenu(false);
   };
 
-  
   // close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -56,8 +55,7 @@ const Header = () => {
 
   const { openLoginPopup } = useLoginPopup();
   const path = window.location.pathname;
-  
-  
+
   return (
     <>
       <header className="bg-[var(--color-primary-darker)] sticky top-0 z-40 border-b border-white/6 backdrop-blur-sm">
@@ -94,35 +92,12 @@ const Header = () => {
             {isLoggedIn ? (
               <div className="relative settings-dropdown">
                 <button
-                  onClick={() => setIsSettingsOpen((prev) => !prev)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/6"
+                  onClick={handleLogOut}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 hover:rounded-lg flex items-center gap-2 text-red-600"
                 >
-                  {/* <img
-                    src={user?.profilePicture || "/default-avatar.png"}
-                    alt="Profile"
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                  <span className="text-lg font-medium text-gray-800">
-                    {displayName}
-                  </span> */}
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
                 </button>
-
-                {isSettingsOpen && (
-                  <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border py-2 z-50">
-                    <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex gap-2">
-                      <User className="w-4 h-4" />
-                      Profile
-                    </button>
-
-                    <button
-                      onClick={handleLogOut}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-50 flex gap-2 text-red-600"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Sign Out
-                    </button>
-                  </div>
-                )}
               </div>
             ) : (
               <motion.button
@@ -169,14 +144,30 @@ const Header = () => {
           >
             {/* Mobile header inside menu */}
             <div className="px-4 py-3 border-b border-white/6 flex items-center justify-between">
-              <div className="flex items-center gap-3 cursor-pointer" onClick={() => { handleNav('/'); setMobileMenu(false); }}>
+              <div
+                className="flex items-center gap-3 cursor-pointer"
+                onClick={() => {
+                  handleNav("/");
+                  setMobileMenu(false);
+                }}
+              >
                 <div className="h-8 w-8 rounded-lg overflow-hidden">
-                  <img src={logo} alt="CrickBro" className="h-full w-full object-cover" />
+                  <img
+                    src={logo}
+                    alt="CrickBro"
+                    className="h-full w-full object-cover"
+                  />
                 </div>
-                <div className="text-lg font-oswald font-bold text-white">CrickBro</div>
+                <div className="text-lg font-oswald font-bold text-white">
+                  CrickBro
+                </div>
               </div>
 
-              <button onClick={() => setMobileMenu(false)} className="btn-icon" aria-label="Close menu">
+              <button
+                onClick={() => setMobileMenu(false)}
+                className="btn-icon"
+                aria-label="Close menu"
+              >
                 <X size={18} />
               </button>
             </div>
@@ -185,7 +176,9 @@ const Header = () => {
               {navOptions.map((item) => (
                 <button
                   key={item.label}
-                  onClick={() => { handleNav(item.path); }}
+                  onClick={() => {
+                    handleNav(item.path);
+                  }}
                   className="text-left nav-link w-full py-3 text-base"
                 >
                   {item.label}
@@ -194,7 +187,10 @@ const Header = () => {
 
               {isLoggedIn ? (
                 <button
-                  onClick={() => { handleLogOut(); setMobileMenu(false); }}
+                  onClick={() => {
+                    handleLogOut();
+                    setMobileMenu(false);
+                  }}
                   className="mt-2 bg-red-500 text-white py-3 rounded-lg font-semibold"
                 >
                   Logout
@@ -213,7 +209,7 @@ const Header = () => {
               )}
             </div>
           </motion.div>
-        )} 
+        )}
       </header>
 
       {/* Login Popup */}

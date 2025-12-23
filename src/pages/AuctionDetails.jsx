@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -10,36 +10,118 @@ import {
   Trophy,
 } from "lucide-react";
 
-import AuctionOverview from "../pages/AuctionDetailsTabs/AuctionOverview";
-import AuctionLive from "../pages/AuctionDetailsTabs/AuctionLive";
-import AuctionPlayers from "../pages/AuctionDetailsTabs/AuctionPlayers";
-import AuctionTeams from "../pages/AuctionDetailsTabs/AuctionTeams";
-import AuctionMatches from "../pages/AuctionDetailsTabs/AuctionMatches";
+// TAB CONTENT COMPONENTS
+import TournamentDetails from "./AuctionDetailsTabs/TournamentDetails";
+import DetailsOfAuction from "./AuctionDetailsTabs/DetailsOfAuction";
+import AuctionPlayers from "./AuctionDetailsTabs/AuctionPlayers";
+import AuctionTeams from "./AuctionDetailsTabs/AuctionTeams";
+import AuctionMatches from "./AuctionDetailsTabs/AuctionMatches";
 
-const tabs = [
-  { key: "overview", label: "Overview", icon: LayoutDashboard },
+/* ===============================
+   MOCK ROLE FLAGS (FROM BACKEND LATER)
+================================ */
+const adminLogin = true;       // ADMIN
+const alreadyAdded = false;   // PLAYER
+const isSelector = false;     // SELECTOR
+const isTeamOwner = false;    // TEAM OWNER
+
+/* ===============================
+   BUILD USER ROLES
+================================ */
+const userRoles = [];
+
+if (adminLogin) userRoles.push("admin");
+if (isSelector) userRoles.push("selector");
+if (isTeamOwner) userRoles.push("teamOwner");
+if (alreadyAdded) userRoles.push("player");
+
+if (userRoles.length === 0) {
+  userRoles.push("newPlayer");
+}
+
+/* ===============================
+   ROLE → ALLOWED TABS
+================================ */
+const roleTabs = {
+  admin: ["info", "auction", "players","slot", "teams", "overview"],
+  selector: ["info", "auction", "assignedPlayers", "trialslot"],
+  teamOwner: ["info", "auction", "myteam"],
+  player: ["info", "myScore"],
+  newPlayer: ["info"],
+};
+
+/* ===============================
+   MASTER TAB LIST
+================================ */
+const allTabs = [
+  { key: "info", label: "Tournament Info", icon: LayoutDashboard },
   { key: "auction", label: "Auction", icon: Gavel },
   { key: "players", label: "Players", icon: Users },
   { key: "teams", label: "Teams", icon: Shield },
-  { key: "matches", label: "Matches", icon: Trophy },
+  { key: "overview", label: "Auction Overview", icon: Trophy },
+  { key: "myteam", label: "My Team", icon: Users },
+  { key: "myScore", label: "My Score", icon: Trophy },
+  { key: "assignedPlayers", label: "Assigned Players", icon: Users },
+  { key: "trialslot", label: "Trial Slot", icon: Trophy },
+  { key: "slot", label: "Slot", icon: Gavel },
+
 ];
 
+/* ===============================
+   MAIN COMPONENT
+================================ */
 const AuctionDetails = () => {
   const { auctionId } = useParams();
-  const [activeTab, setActiveTab] = useState("overview");
 
+  // highest priority role
+  const currentRole = userRoles[0];
+
+  const allowedTabKeys = roleTabs[currentRole] || [];
+
+  const visibleTabs = useMemo(() => {
+    return allTabs.filter((tab) =>
+      allowedTabKeys.includes(tab.key)
+    );
+  }, [allowedTabKeys]);
+
+  const [activeTab, setActiveTab] = useState(allowedTabKeys[0]);
+
+  /* ===============================
+     TAB CONTENT RENDER
+  ================================ */
   const renderTab = () => {
+    if (!allowedTabKeys.includes(activeTab)) {
+      return <div className="text-white">Access Denied</div>;
+    }
+
     switch (activeTab) {
-      case "overview":
-        return <AuctionOverview auctionId={auctionId} />;
+      case "info":
+        return <TournamentDetails auctionId={auctionId} />;
+
       case "auction":
-        return <AuctionLive auctionId={auctionId} />;
+        return <DetailsOfAuction auctionId={auctionId} />;
+
       case "players":
         return <AuctionPlayers auctionId={auctionId} />;
+
       case "teams":
         return <AuctionTeams auctionId={auctionId} />;
-      case "matches":
+
+      case "overview":
         return <AuctionMatches auctionId={auctionId} />;
+
+      case "myteam":
+        return <div>My Team Component</div>;
+
+      case "myScore":
+        return <div>My Score Component</div>;
+
+      case "assignedPlayers":
+        return <div>Assigned Players Component</div>;
+
+      case "trialslot":
+        return <div>Trial Slot Component</div>;
+
       default:
         return null;
     }
@@ -47,16 +129,17 @@ const AuctionDetails = () => {
 
   return (
     <>
-      {/* <Header /> */}
+      <Header />
+      <main className="relative  ">
+        {/* Background */}
+        <div className="absolute inset-0 " />
+        <div className="absolute inset-0 bg-black/50" />
 
-      {/* IMPORTANT: pt-28 for fixed header */}
-      <main className="min-h-screen bg-[#FFF9EC] px-6 py-10 pt-28">
-        <div className="max-w-7xl mx-auto grid grid-cols-12 gap-8">
-          
-          {/* LEFT SIDEBAR */}
+        <div className="relative z-10  grid grid-cols-12">
+          {/* SIDEBAR */}
           <aside className="col-span-12 md:col-span-3">
-            <div className="sticky top-28 bg-white rounded-2xl shadow-lg border border-black/5 p-3 space-y-1">
-              {tabs.map((tab) => {
+            <div className="sticky  bg-black/80 backdrop-blur-md h-full p-3 space-y-1 border border-white/10">
+              {visibleTabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.key;
 
@@ -68,7 +151,7 @@ const AuctionDetails = () => {
                       ${
                         isActive
                           ? "bg-[var(--color-primary)] text-white shadow"
-                          : "text-black/60 hover:bg-black/5"
+                          : "text-white/70 hover:bg-white/10"
                       }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -76,12 +159,22 @@ const AuctionDetails = () => {
                   </button>
                 );
               })}
+
+              {/* CTA */}
+              <div className="rounded-xl bg-[#154947] p-4 text-white mt-3">
+                <h3 className="font-semibold mb-2">
+                  Get Ready to Compete!
+                </h3>
+                <button className="w-full bg-[var(--color-warm)] text-[#02271E] font-semibold py-2 rounded-lg">
+                  Register / Enroll
+                </button>
+              </div>
             </div>
           </aside>
 
-          {/* RIGHT CONTENT */}
+          {/* CONTENT */}
           <section className="col-span-12 md:col-span-9">
-            <div className="bg-white rounded-3xl shadow-lg border border-black/5 p-6 md:p-8 min-h-[500px]">
+            <div className="bg-black/80 backdrop-blur-md  p-6 min-h-[500px] text-white border border-white/10">
               {renderTab()}
             </div>
           </section>

@@ -76,7 +76,7 @@ const AuctionBrowse = () => {
         );
 
   const handleOpenAuction = (auctionId) => {
-    navigate(`/auction/${auctionId}`);
+    navigate(`/auction-details/${auctionId}`);
   };
 
   return (
