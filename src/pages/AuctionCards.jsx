@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Clock } from "lucide-react";
+import { MapPin, Clock, Edit, Delete, Trash } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { fetchAuctions } from "../redux/actions";
@@ -31,14 +31,14 @@ const getAuctionTabStatus = (status) => {
 /* ---------------- TABS ---------------- */
 
 const tabs = [
-  { key: "live", label: "Live" },
-  { key: "upcoming", label: "Upcoming" },
+  { key: "ongoing", label: "Ongoing" },
+  { key: "scheduled", label: "Upcoming" },
   { key: "completed", label: "Completed" },
   { key: "my", label: "My auctions" },
 ];
 
 const AuctionBrowse = () => {
-  const [activeTab, setActiveTab] = useState("live");
+  const [activeTab, setActiveTab] = useState("ongoing");
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -46,43 +46,32 @@ const AuctionBrowse = () => {
 
   const isHome = window.location.pathname === "/";
 
-  const isLoading = useSelector(
-    (state) => state.loading?.auctionList || false
-  );
+  const isLoading = useSelector((state) => state.loading?.auctionList || false);
 
-  const apiError = useSelector(
-    (state) => state.error?.auctionList || null
-  );
+  const apiError = useSelector((state) => state.error?.auctionList || null);
 
-  const auctionData = useSelector(
-    (state) => state.data?.auctionList || null
-  );
+  const auctionData = useSelector((state) => state.data?.auctionList || null);
 
   const auctions = auctionData?.data || [];
 
   useEffect(() => {
     if (playerId) {
-      dispatch(fetchAuctions());
+      const isMyAuction = activeTab === "my";
+      dispatch(fetchAuctions(activeTab, playerId, isMyAuction));
     }
-  }, [dispatch, playerId]);
+  }, [dispatch, playerId, activeTab]);
 
   /* ---------------- FILTER ---------------- */
-
-  const filteredAuctions =
-    activeTab === "my"
-      ? []
-      : auctions.filter(
-          (a) => getAuctionTabStatus(a.auctionStatus) === activeTab
-        );
 
   const handleOpenAuction = (auctionId) => {
     navigate(`/auction-details/${auctionId}`);
   };
 
+  console.log(auctions, "actionData");
+
   return (
     <>
       {!isHome && <Header />}
-
       <section
         className={`min-h-[60vh] px-6 sm:px-8 py-20
           ${
@@ -91,20 +80,32 @@ const AuctionBrowse = () => {
               : "bg-[#FFF9EC]"
           }`}
       >
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto  ">
           {/* Title */}
-          <span
-            className={`tracking-widest text-xl font-semibold border-l-4 pl-4
+          <div className="flex flex-row justify-between">
+            <div
+              className={`tracking-widest text-xl font-semibold border-l-4 pl-4 
               ${
                 isHome
-                  ? "text-[var(--color-warm)] border-[var(--color-warm)]"
+                  ? "text-[var(--color-warm)] border-[var(--color-warm)] "
                   : "text-[var(--color-primary)] border-[var(--color-primary)]"
               }`}
-          >
-            AUCTIONS
-          </span>
+            >
+              AUCTIONS
+            </div>
+            <div>
+              <button
+                onClick={() => {
+                  navigate("/createAuction");
+                }}
+                className="animate-floatSoft px-5 py-2 rounded-lg bg-[var(--color-primary)] text-white font-medium shadow-md"
+              >
+                Create Auction
+              </button>
+            </div>
+          </div>
 
-          <h1
+          {/* <h1
             className={`text-4xl font-semibold mt-3 mb-8
               ${
                 isHome
@@ -113,11 +114,11 @@ const AuctionBrowse = () => {
               }`}
           >
             Browse live, upcoming & completed auctions
-          </h1>
+          </h1> */}
 
           {/* Tabs */}
           {!isHome && (
-            <div className="flex flex-wrap gap-3 mb-10">
+            <div className="flex flex-wrap gap-3 mb-4">
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
@@ -143,7 +144,7 @@ const AuctionBrowse = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.25 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-4"
             >
               {isLoading && (
                 <div className="col-span-full text-center py-20">
@@ -151,7 +152,7 @@ const AuctionBrowse = () => {
                 </div>
               )}
 
-              {!isLoading && filteredAuctions.length === 0 && (
+              {!isLoading && auctions.length === 0 && (
                 <div
                   className={`col-span-full py-16 text-center
                     ${isHome ? "text-white/50" : "text-black/40"}`}
@@ -160,10 +161,9 @@ const AuctionBrowse = () => {
                 </div>
               )}
 
-              {filteredAuctions.map((auction) => (
+              {auctions.map((auction) => (
                 <motion.div
                   key={auction._id}
-                  onClick={() => handleOpenAuction(auction._id)}
                   whileHover={{ scale: 1.03, y: -6 }}
                   transition={{ type: "spring", stiffness: 200 }}
                   className={`cursor-pointer rounded-3xl p-6 
@@ -174,7 +174,10 @@ const AuctionBrowse = () => {
                     }`}
                 >
                   {/* Top */}
-                  <div className="flex justify-between items-start">
+                  <div
+                    className="flex justify-between items-start relative"
+                    onClick={() => handleOpenAuction(auction._id)}
+                  >
                     <div>
                       <h3
                         className={`font-medium mb-1
@@ -185,16 +188,31 @@ const AuctionBrowse = () => {
 
                       <p
                         className={`text-sm flex items-center gap-2
-                          ${
-                            isHome
-                              ? "text-white/50"
-                              : "text-black/50"
-                          }`}
+                          ${isHome ? "text-white/50" : "text-black/50"}`}
                       >
                         <MapPin className="w-4 h-4" />
                         {auction.tournamentId?.cityTown || "—"}
                       </p>
                     </div>
+                   {activeTab === "my" && <div className="absolute top-0 right-0 flex gap-2 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200">
+                      <button
+                        className="p-2 rounded-lg bg-white shadow hover:bg-blue-50 "
+                        title="Edit"
+                        onClick={(e) => {
+                          e.stopPropagation(); 
+                          navigate(`/editAuction/${auction._id}`);
+                        }}
+                      >
+                        <Edit className="w-4 h-4 text-blue-600" />
+                      </button>
+
+                      {/* <button
+                        className="p-2 rounded-lg bg-white shadow hover:bg-red-50"
+                        title="Delete"
+                      >
+                        <Trash className="w-4 h-4 text-red-500" />
+                      </button> */}
+                    </div>}
 
                     {auction.isBiddingActive && (
                       <span

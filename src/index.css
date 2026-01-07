@@ -160,3 +160,17 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-primary-darker);
 }
+
+@keyframes floatSoft {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-floatSoft {
+  animation: floatSoft 2.5s ease-in-out infinite;
+}
+

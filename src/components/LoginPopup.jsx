@@ -118,8 +118,9 @@ useEffect(() => {
         payload: data,
       })
     );
-    //  setOtp(["", "", "", "", "", ""]);
-    //  setLoginDetails({ mobile: "", countryCode: "+91" });
+     setOtp(["", "", "", "", "", ""]);
+     setLoginDetails({ mobile: "", countryCode: "+91" });
+     
     //  setIsLoggedIn(true)
    
     // if (afterLoginCallback) {

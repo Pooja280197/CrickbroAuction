@@ -47,7 +47,7 @@ const DetailsOfAuction = ({ auctionId }) => {
     auctionRules,
     // autoSettings,
     stream,
-    startedAt,
+    
   } = auctionData;
 
   return (
@@ -84,11 +84,11 @@ const DetailsOfAuction = ({ auctionId }) => {
           label="Auction Date"
           value={formatDate(auctionDate)}
         />
-        <Stat
+        {/* <Stat
           icon={Clock}
           label="Started At"
           value={formatDate(startedAt)}
-        />
+        /> */}
         <Stat icon={Users} label="Teams" value={teams?.length} />
         <Stat icon={Users} label="Players" value={players?.length} />
       </div>

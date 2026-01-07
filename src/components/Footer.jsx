@@ -1,13 +1,15 @@
 import React from "react";
 import { Facebook, Twitter, Instagram, Youtube, Mail, Phone, MapPin } from "lucide-react";
+import logo from '../assets/Images/Logo2.png'
+
 
 const Footer = () => {
   const footerLinks = {
     Platform: [
-      { label: "Live Auctions", href: "#" },
-      { label: "Player Database", href: "#" },
-      { label: "Team Management", href: "#" },
-      { label: "Tournament Setup", href: "#" },
+      { label: "Home", link: "/" },
+      { label: "Auction", link: "/auction" },
+      { label: "Players", link: "/" },
+      { label: "Blog", link: "/" },
     ],
     Resources: [
       { label: "Documentation", href: "#" },
@@ -24,10 +26,9 @@ const Footer = () => {
   };
 
   const socialLinks = [
-    { icon: Facebook, href: "#", label: "Facebook" },
-    { icon: Twitter, href: "#", label: "Twitter" },
-    { icon: Instagram, href: "#", label: "Instagram" },
-    { icon: Youtube, href: "#", label: "YouTube" },
+    { icon: Facebook, href: "https://www.facebook.com/crickbro.official", label: "Facebook" },
+    { icon: Instagram, href: "https://www.instagram.com/crickbro.official", label: "Instagram" },
+    { icon: Youtube, href: "https://www.youtube.com/@crickbroOfficials2.0", label: "YouTube" },
   ];
 
   return (
@@ -38,8 +39,13 @@ const Footer = () => {
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-6">
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#154947] to-[#0F3E3C] p-2 flex items-center justify-center">
-                <div className="text-2xl font-bold text-crickbroYellow">CB</div>
+              <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-[#154947] to-[#0F3E3C]  flex items-center justify-center">
+                <div className="text-2xl font-bold text-crickbroYellow">
+                  <img
+                  src={logo}
+                  alt="logo"
+                  />
+                </div>
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-white font-oswald">CrickBro</h2>
@@ -59,6 +65,7 @@ const Footer = () => {
                   href={social.href}
                   className="btn-circle hover:scale-105 transition-transform"
                   aria-label={social.label}
+                  target="_blank"
                 >
                   <social.icon className="w-5 h-5" />
                 </a>
@@ -74,7 +81,7 @@ const Footer = () => {
                 {links.map((link) => (
                   <li key={link.label}>
                     <a
-                      href={link.href}
+                      href={link.link}
                       className="text-[#CFE6E4] hover:text-crickbroYellow text-sm transition-colors"
                     >
                       {link.label}
@@ -94,7 +101,7 @@ const Footer = () => {
             </div>
             <div>
               <div className="text-sm text-[#9FBFBB]">Email</div>
-              <div className="text-white font-inter">support@crickbro.com</div>
+              <div className="text-white font-inter">info@crickbro.com</div>
             </div>
           </div>
           
@@ -104,7 +111,7 @@ const Footer = () => {
             </div>
             <div>
               <div className="text-sm text-[#9FBFBB]">Phone</div>
-              <div className="text-white font-inter">+91 98765 43210</div>
+              <div className="text-white font-inter">+91 9993968327</div>
             </div>
           </div>
           
@@ -114,7 +121,7 @@ const Footer = () => {
             </div>
             <div>
               <div className="text-sm text-[#9FBFBB]">Office</div>
-              <div className="text-white font-inter">Mumbai, Maharashtra</div>
+              <div className="text-white font-inter">Indore, India</div>
             </div>
           </div>
         </div>
@@ -123,9 +130,9 @@ const Footer = () => {
         <div className="pt-8 border-t border-[#164A48]">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-[#9FBFBB] text-sm">
-              © 2025 CrickBro Auction Platform. All rights reserved.
+              © 2025 CrickBro. All rights reserved. | Made with ❤️ for cricket lovers in India.
             </div>
-            <div className="flex gap-6 text-sm text-[#CFE6E4]">
+            {/* <div className="flex gap-6 text-sm text-[#CFE6E4]">
               <a href="#" className="hover:text-crickbroYellow transition-colors">
                 Privacy Policy
               </a>
@@ -135,7 +142,7 @@ const Footer = () => {
               <a href="#" className="hover:text-crickbroYellow transition-colors">
                 Cookie Policy
               </a>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
