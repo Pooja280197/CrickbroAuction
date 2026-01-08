@@ -52,11 +52,7 @@ export default function Auctions() {
     }
   }, [dispatch, playerId]);
 
-  // Debug logging
-  console.log("Loading:", isLoading);
-  console.log("Error:", apiError);
-  console.log("Auction Data:", auctionData);
-  console.log("Auctions array:", auctions);
+
 
   const handleOpenAuction = (auctionId) => {
     navigate(`/auction/${auctionId}`);

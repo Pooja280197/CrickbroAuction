@@ -9,7 +9,7 @@ import {
   fetchAllSelectors,
   fetchAllTeamOwners,
   fetchAuctionDetails,
-  getAllAuctionTeams,
+  getAllAuctionTeam,
   removeAdmin,
   removeSelector,
   removeTeamOwner,
@@ -54,7 +54,7 @@ const Settings = ({ auctionId }) => {
   const isTeamOwnersLoading = useSelector(
     (state) => state.loading?.auctionTeamOwners
   );
-  const isTeamsLoading = useSelector((state) => state.loading?.auctionTeams);
+  const isTeamsLoading = useSelector((state) => state.loading?.allAuctionTeams);
 
   const adminData = useSelector((state) => state.data?.auctionAdmins || null);
   const selectorsData = useSelector(
@@ -64,11 +64,10 @@ const Settings = ({ auctionId }) => {
     (state) => state.data?.auctionTeamOwners || null
   );
   const tournamentTeam = useSelector(
-    (state) => state.data?.auctionTeams || null
+    (state) => state.data?.allAuctionTeams || null
   );
 
   const auction = useSelector((state) => state.data?.auctionDetails || null);
-
   const searchUser = useSelector((state) => state.data?.searchUser || null);
   const adminList = adminData?.admins || [];
   const selectorList = selectorsData?.selectors || [];
@@ -94,7 +93,7 @@ const Settings = ({ auctionId }) => {
       dispatch(fetchAllTeamOwners(auctionId));
     }
     if (!tournamentTeam) {
-      dispatch(getAllAuctionTeams());
+      dispatch(getAllAuctionTeam());
     }
     if (!auction) {
       dispatch(fetchAuctionDetails(auctionId));
@@ -111,7 +110,7 @@ const Settings = ({ auctionId }) => {
     }
   }, [tournamentTeam]);
 
-  console.log(auction,"auction")
+
 
   const handleContactChange = async (e) => {
     const value = e.target.value.replace(/\D/g, "");
@@ -587,7 +586,7 @@ const Settings = ({ auctionId }) => {
               {/* OWNER LIST */}
               <div className="px-4 max-h-[220px] overflow-y-auto font-inter">
                 {ownerList.map((owner) =>
-              // console.log(owner.teamId)
+             
                   owner?.owners?.map((oname) => (
                     <div
                       key={oname._id}

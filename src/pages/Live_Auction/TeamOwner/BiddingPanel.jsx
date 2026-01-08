@@ -678,7 +678,9 @@ const BiddingPanel = () => {
     setPlayerId("68da29826fe07f64bf45a1ee");
   }, []);
 
-  const { state } = useLocation();
+  // const { state } = useLocation();
+  const state = localStorage.getItem("selectedTeamId");
+
 
   /* ---------- SOCKET ---------- */
   useEffect(() => {
@@ -719,6 +721,14 @@ const BiddingPanel = () => {
       })
       .catch((err) => console.error(err));
   }, [auctionId, state]);
+
+  const remainingBudget = selectedTeam?.teamAuctionDetails?.remainingBudget || 0;
+  const canBid = bidAmount && bidAmount <= remainingBudget && bidAmount > 0;
+  // Projected remaining budget: subtract the current player's current bid (use 0 if no currentBid)
+  const projectedRemaining= selectedTeam && currentPlayer
+    ? (selectedTeam.teamAuctionDetails?.remainingBudget || 0) - (currentPlayer.currentBid ?? 0)
+    : null;
+
 
   /* ---------- SOCKET DATA HANDLER ---------- */
   const handleSocketData = (data) => {

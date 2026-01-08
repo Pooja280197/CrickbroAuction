@@ -317,7 +317,7 @@ export default function CreateEditAuction() {
         countdownWarningAt: "",
         extendTimeOnBid: "",
       }}
-      console.log(payload,"payload")
+   
       await dispatch(editAuction(auctionId, payload));
       toast.success("Auction edited successfully!");
       navigate("/auction");

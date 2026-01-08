@@ -67,7 +67,6 @@ const AuctionBrowse = () => {
     navigate(`/auction-details/${auctionId}`);
   };
 
-  console.log(auctions, "actionData");
 
   return (
     <>

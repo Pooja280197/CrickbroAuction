@@ -12,8 +12,7 @@ export default function PlayerProfile() {
 
   const profile = data?.profile;
   const isLoading = loading.profile;
-  const apiError = error.profile;
-  console.log(apiError)
+
 
   useEffect(() => {
     if (playerId) {

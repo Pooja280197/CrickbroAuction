@@ -60,7 +60,7 @@ export default function TeamCard({
             )}
           </div>
         </div>
-        <p className="text-xs font-semibold text-gray-900 text-center truncate w-full px-1">
+        <p className="text-xs font-semibold text-white text-center truncate w-full px-1">
           {team.name}
         </p>
       </div>

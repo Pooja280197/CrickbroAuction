@@ -2,9 +2,15 @@ import React, { useState, useEffect } from "react";
 import TeamCard from "./TeamCard";
 import { Search } from "lucide-react";
 import { useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { getAuctionTeams } from "../../redux/actions";
 
 const AuctionTeams = () => {
-  const { id } = useParams();
+  const { auctionId } = useParams();
+  const dispatch = useDispatch();
+
+  const loading = useSelector((state) => state?.loading?.auctionTeams);
+  const TeamsData = useSelector((state) => state?.data?.auctionTeams);
 
   const [selectedTeamToAuction, setSelectedTeamToAuction] = useState([]);
   const [registeredPlayers, setRegisteredPlayers] = useState([]);
@@ -19,28 +25,13 @@ const AuctionTeams = () => {
     return matchesSearch;
   });
 
-  const getAuctionTeam = () => {
-    axios
-      .get(`/webSiteApi/auction/getAuctionTeams/${id}`)
-      .then((res) => {
-        setSelectedTeamToAuction(res.data.data.data);
-      })
-      .catch((err) => {});
-  };
   useEffect(() => {
-    if (id) {
-      // fetchAuctionPlayers();
-      // fetchAuction();
-      // fetchAllAdmin();
-      // fetchSlotList();
-      // fetchAllSelector();
-      getAuctionTeam();
-      // fetchSelectorPlayers();
-      // fetchSelectorSlots()
-      // fetchMySessions()
-      // fetchAllOwners()
+    if (auctionId) {
+      dispatch(getAuctionTeams(auctionId));
     }
-  }, [id]);
+  }, [auctionId]);
+
+
 
   return (
     <div>
@@ -93,7 +84,7 @@ const AuctionTeams = () => {
                 );
               })}
             </div>
-          ) : (
+          ) : ( 
             <div className="text-center py-14">
               <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-100 rounded-full mb-3">
                 <Search className="w-6 h-6 text-gray-400" />
@@ -109,5 +100,5 @@ const AuctionTeams = () => {
     </div>
   );
 };
-
+ 
 export default AuctionTeams;

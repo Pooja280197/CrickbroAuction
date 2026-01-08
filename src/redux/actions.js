@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const playerId=localStorage.getItem('playerId')
+const playerId = localStorage.getItem('playerId')
 const tournamentId = localStorage.getItem('tournamentId')
 
 
@@ -90,14 +90,14 @@ export const verifyOtp = ({ payload }) => {
   };
 };
 
-export const fetchUserRole = (auctionId,playerId) => {
-  
+export const fetchUserRole = (auctionId, playerId) => {
+
   return async (dispatch) => {
     dispatch({ type: "API_START", key: "userRole" });
     const url = `/webSiteApi/auction/checkAuctionUserRole/${auctionId}/${playerId}`;
     try {
       const response = await axios.get(url);
-      console.log(response,"res")
+     
       dispatch({
         type: "API_SUCCESS",
         key: "userRole",
@@ -157,6 +157,32 @@ export const fetchProfile = (playerId) => {
     }
   };
 };
+
+export const EnrollPlayer = (auctionId, playerId) => {
+  return async (dispatch) => {
+    dispatch({ type: "API_START", key: "enrollPlayer" });
+    const url = (`/webSiteApi/auction/addPlayers/${auctionId}`)
+    try {
+      const response = await axios.post(url, { playerIds: [playerId] });
+      dispatch({
+        type: "API_SUCCESS",
+        key: "enrollPlayer",
+        payload: response?.data?.data,
+      });
+      return response;
+    }
+    catch (error) {
+      dispatch({
+        type: "API_ERROR",
+        key: "enrollPlayer",
+        payload:
+          error?.response?.data?.message ||
+          "Something went wrong",
+      });
+      throw error;
+    }
+  }
+}
 
 
 // Auction Api
@@ -478,29 +504,29 @@ export const removeSelector = (auctionId, selectorId) => {
   };
 };
 
-export const getAllAuctionTeams = () => {
-  return async (dispatch) => {
-    dispatch({ type: "API_START", key: "auctionTeams" });
-    const url = `/webSiteApi/auction/getTeamList/${tournamentId}`;
-    try {
-      const response = await axios.get(url);
-      console.log(response, "response in action");
-      dispatch({
-        type: "API_SUCCESS",
-        key: "auctionTeams",
-        payload: response?.data?.data,
-      });
-    } catch (error) {
-      dispatch({
-        type: "API_ERROR",
-        key: "auctionTeams",
-        payload:
-          error?.response?.data?.message ||
-          "Something went wrong",
-      });
-    }
-  }
-}
+// export const getAllAuctionTeams = () => {
+//   return async (dispatch) => {
+//     dispatch({ type: "API_START", key: "auctionTeams" });
+//     const url = `/webSiteApi/auction/getTeamList/${tournamentId}`;
+//     try {
+//       const response = await axios.get(url);
+//       console.log(response, "response in action");
+//       dispatch({
+//         type: "API_SUCCESS",
+//         key: "auctionTeams",
+//         payload: response?.data?.data,
+//       });
+//     } catch (error) {
+//       dispatch({
+//         type: "API_ERROR",
+//         key: "auctionTeams",
+//         payload:
+//           error?.response?.data?.message ||
+//           "Something went wrong",
+//       });
+//     }
+//   }
+// }
 
 export const addTeamToAuction = (auctionId, selectedTeam) => {
   return async (dispatch) => {
@@ -729,7 +755,7 @@ export const deleteSlot = (auctionId) => {
   };
 };
 
-export const createSession = (selectedId,formData) => {
+export const createSession = (selectedId, formData) => {
   return async (dispatch) => {
     dispatch({ type: "API_START", key: "createSession" });
     const url = `/webSiteApi/auctionSlot/addSession/${selectedId}`;
@@ -757,7 +783,7 @@ export const createSession = (selectedId,formData) => {
 }
 
 export const editSession = (slotId, sessionId, sessionData) => {
-  console.log("edit")
+
   return async (dispatch) => {
     dispatch({ type: "API_START", key: "editSession" });
 
@@ -786,7 +812,7 @@ export const editSession = (slotId, sessionId, sessionData) => {
   };
 };
 
-export const deleteSession = (slotId,sessionId) => {
+export const deleteSession = (slotId, sessionId) => {
   return async (dispatch) => {
     dispatch({ type: "API_START", key: "deleteSession" });
     const url = `/webSiteApi/auctionSlot/removeSession/${slotId}/${sessionId}`;
@@ -818,7 +844,7 @@ export const getMyTournaments = () => {
     const url = `/webSiteApi/auction/listTournamentDropdown/${playerId}`;
     try {
       const response = await axios.get(url);
-      console.log(response, "response my tournaments");
+    
       dispatch({
         type: "API_SUCCESS",
         key: "myTournaments",
@@ -863,7 +889,7 @@ export const createAuction = (formData) => {
   }
 }
 
-export const editAuction = (auctionId,formData) => {
+export const editAuction = (auctionId, formData) => {
   return async (dispatch) => {
     dispatch({ type: "API_START", key: "editAuction" });
     const url = `/webSiteApi/auction/edit/${auctionId}`;
@@ -895,7 +921,7 @@ export const createCategory = (formData) => {
     dispatch({ type: "API_START", key: "createCategory" });
     const url = `/webSiteApi/auctionCategory/createCategory`;
     try {
-      const response = await axios.post(url, 
+      const response = await axios.post(url,
         formData
       );
       dispatch({
@@ -924,7 +950,7 @@ export const getCategories = (auctionId) => {
     const url = `/webSiteApi/auctionCategory/listCategories?auctionId=${auctionId}`;
     try {
       const response = await axios.get(url);
-      console.log(response, "response my tournaments");
+   
       dispatch({
         type: "API_SUCCESS",
         key: "categories",
@@ -942,13 +968,13 @@ export const getCategories = (auctionId) => {
   }
 }
 
-export const updateCategories = (data,editId) => {
+export const updateCategories = (data, editId) => {
   return async (dispatch) => {
     dispatch({ type: "API_START", key: "updateCategories" });
     const url = `/webSiteApi/auctionCategory/updateCategory/${editId}`;
     try {
-      const response = await axios.put(url,data);
-      console.log(response, "response my tournaments");
+      const response = await axios.put(url, data);
+ 
       dispatch({
         type: "API_SUCCESS",
         key: "updateCategories",
@@ -997,7 +1023,7 @@ export const getSelectorsSlot = (auctionId) => {
     const url = `/webSiteApi/auctionSelector/getSelectorAssignments/${auctionId}?selectorId=${playerId}`;
     try {
       const response = await axios.get(url);
-      console.log(response, "response my tournaments");
+    
       dispatch({
         type: "API_SUCCESS",
         key: "mySlots",
@@ -1014,6 +1040,168 @@ export const getSelectorsSlot = (auctionId) => {
     }
   }
 }
+
+export const getAuctionPlayers = ({
+  auctionId,
+  tab = "all",
+  page = 1,
+  itemsPerPage,
+  statusSort,
+  typeSort,
+  debouncedSearch,
+}) => {
+  return async (dispatch) => {
+    dispatch({ type: "API_START", key: "auctionPlayers" });
+
+    try {
+      let url = `/webSiteApi/auction/getAuctionPlayers/${auctionId}`;
+
+      const params = {
+        limit: itemsPerPage,
+        page,
+      };
+
+      if (tab === "unassigned") {
+        params.trailStatus = "not-assign";
+      } else if (tab === "assigned") {
+        params.trailStatus = "assign";
+
+        if (statusSort) {
+          if (statusSort === "all") {
+            params.selectionStatus = "";
+            params.playerType = "";
+          } else if (
+            statusSort === "pending" ||
+            statusSort === "not reached"
+          ) {
+            params.selectionStatus = statusSort;
+            params.playerType = "";
+          } else {
+            params.selectionStatus = statusSort;
+          }
+        }
+
+        if (typeSort) {
+          params.playerType = typeSort === "none" ? "" : typeSort;
+        }
+      }
+
+      if (debouncedSearch) {
+        params.search = debouncedSearch;
+      }
+
+      const queryString = new URLSearchParams(params).toString();
+      if (queryString) url += `?${queryString}`;
+
+      const res = await axios.get(url);
+
+      dispatch({
+        type: "API_SUCCESS",
+        key: "auctionPlayers",
+        payload: {
+          list: res?.data?.data?.data || [],
+          pages: res?.data?.data?.pages || 0,
+          total: res?.data?.data?.total || 0,
+          page,
+        },
+      });
+    } catch (error) {
+      dispatch({
+        type: "API_ERROR",
+        key: "auctionPlayers",
+        payload:
+          error?.response?.data?.message ||
+          "Failed to fetch players",
+      });
+    }
+  };
+};
+
+export const getAuctionTeams = (auctionId) => {
+  return async (dispatch) => {
+    dispatch({ type: "API_START", key: "auctionTeams" });
+    const url = `/webSiteApi/auction/getAuctionTeams/${auctionId}`;
+    try {
+      const response = await axios.get(url);
+     
+      dispatch({
+        type: "API_SUCCESS",
+        key: "auctionTeams",
+        payload: response?.data?.data,
+      });
+    } catch (error) {
+      dispatch({
+        type: "API_ERROR",
+        key: "auctionTeams",
+        payload:
+          error?.response?.data?.message ||
+          "Something went wrong",
+      });
+    }
+  }
+}
+
+export const getAllAuctionTeam = () => {
+  return async (dispatch) => {
+    dispatch({ type: "API_START", key: "allAuctionTeams" });
+    const url = `/webSiteApi/auction/getTeamList/${tournamentId}`;
+    try {
+      const response = await axios.get(url);
+      
+      dispatch({
+        type: "API_SUCCESS",
+        key: "allAuctionTeams",
+        payload: response?.data?.data,
+      });
+    } catch (error) {
+      dispatch({
+        type: "API_ERROR",
+        key: "allAuctionTeams",
+        payload:
+          error?.response?.data?.message ||
+          "Something went wrong",
+      });
+    }
+  }
+}
+
+export const getSelectorPlayers= (auctionId, page,search) => {
+  return async (dispatch) => {
+    dispatch({ type: "API_START", key: "selectorPlayers" });
+    const url = `/webSiteApi/auctionSelector/getPlayersBySelector/${auctionId}`;
+    try {
+      const response = await axios.get(url, {
+        params: {
+          selectorId: playerId,
+          search: search,
+          page: page,
+          limit: 8
+        }
+      });
+    
+      dispatch({
+        type: "API_SUCCESS",
+        key: "selectorPlayers",
+        payload: response?.data?.data,
+      });
+    } catch (error) {
+      dispatch({
+        type: "API_ERROR",
+        key: "selectorPlayers",
+        payload:
+          error?.response?.data?.message ||
+          "Something went wrong",
+      });
+    }
+  }
+}
+
+
+
+
+
+
+
 
 
 

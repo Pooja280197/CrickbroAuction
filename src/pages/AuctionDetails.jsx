@@ -3,14 +3,20 @@ import { useParams } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import {
-  LayoutDashboard,
+  Info,
   Gavel,
   Users,
   Shield,
+  BarChart3,
+  UserCircle,
   Trophy,
+  UserCheck,
+  FlaskConical,
+  CalendarClock,
   Settings,
-  SquareMenu,
+  Layers
 } from "lucide-react";
+
 
 // TAB CONTENT COMPONENTS
 import TournamentDetails from "./AuctionDetailsTabs/TournamentDetails";
@@ -21,9 +27,19 @@ import AuctionMatches from "./AuctionDetailsTabs/AuctionMatches";
 import SettingsTab from "./AuctionDetailsTabs/SettingsTab";
 import Slot from "../pages/AuctionDetailsTabs/SlotTab/Slot";
 import Categories from "./AuctionDetailsTabs/CategoryTab/Categories";
-import { fetchUserRole } from "../redux/actions";
+import {
+  EnrollPlayer,
+  fetchAuctionDetails,
+  fetchUserRole,
+} from "../redux/actions";
 import { useDispatch, useSelector } from "react-redux";
 import TrialSlot from "./AuctionDetailsTabs/TrialSlotTab/TrialSlot";
+import RegisterPopup from "./RegisterPopup";
+import { toast } from "react-toastify";
+import TeamsTab from "./AuctionDetailsTabs/ManageTeams/TeamsTab";
+import OwnerTeamDetails from "./Live_Auction/TeamOwner/OwnerTeamDetails";
+import SelectorPlayerCard from "./AuctionDetailsTabs/AssignedPlayersTab/SelectorPlayerCard";
+import AssignedPlayersToSelector from "./AuctionDetailsTabs/AssignedPlayersTab/AssignedPlayersToSelector";
 
 /* ===============================
    ROLE PRIORITY ORDER (Highest to Lowest)
@@ -46,7 +62,7 @@ const roleTabs = {
   ],
   selector: ["info", "auction", "assignedPlayers", "trialslot"],
   teamOwner: ["info", "auction", "myteam"],
-  player: ["info", "myScore"],
+  player: ["info"],
   newPlayer: ["info"],
 };
 
@@ -54,18 +70,29 @@ const roleTabs = {
    MASTER TAB LIST
 ================================ */
 const allTabs = [
-  { key: "info", label: "Tournament Info", icon: LayoutDashboard },
+  { key: "info", label: "Tournament Info", icon: Info },
+
   { key: "auction", label: "Auction", icon: Gavel },
+
   { key: "players", label: "Players", icon: Users },
-  { key: "teams", label: "Teams", icon: Shield },
-  { key: "overview", label: "Auction Overview", icon: Trophy },
-  { key: "myteam", label: "My Team", icon: Users },
+
+  { key: "teams", label: "Manage Teams", icon: Shield },
+
+  { key: "overview", label: "Auction Overview", icon: BarChart3 },
+
+  { key: "myteam", label: "My Team", icon: UserCircle },
+
   { key: "myScore", label: "My Score", icon: Trophy },
-  { key: "assignedPlayers", label: "Assigned Players", icon: Users },
-  { key: "trialslot", label: "Trial Slot", icon: Trophy },
-  { key: "slot", label: "Slot", icon: Gavel },
+
+  { key: "assignedPlayers", label: "Assigned Players", icon: UserCheck },
+
+  { key: "trialslot", label: "Trial Slot", icon: FlaskConical },
+
+  { key: "slot", label: "Slot", icon: CalendarClock },
+
   { key: "settings", label: "Settings", icon: Settings },
-  { key: "categories", label: "Category", icon: SquareMenu },
+
+  { key: "categories", label: "Category", icon: Layers },
 ];
 
 /* ===============================
@@ -74,88 +101,64 @@ const allTabs = [
 const AuctionDetails = () => {
   const { auctionId } = useParams();
   const dispatch = useDispatch();
+  const [registerPopupOpen, setRegisterPopupOpen] = useState(false);
+  const [selectedTournamentId, setSelectedTournamentId] = useState(null);
   const playerId = localStorage.getItem("playerId");
-
   const userRole = useSelector((state) => state.data?.userRole);
   const [activeTab, setActiveTab] = useState("info");
+  const tournamentId=localStorage.getItem("tournamentId")
 
   useEffect(() => {
     dispatch(fetchUserRole(auctionId, playerId));
   }, [auctionId, playerId]);
 
-  // Get all roles that are true
-  // const getUserRoles = () => {
-  //   if (!userRole) return ["newPlayer"];
-    
-  //   const roles = [];
-    
-  //   // Check each role flag
-  //   if (userRole.admin === true) roles.push("admin");
-  //   if (userRole.selector === true) roles.push("selector");
-  //   if (userRole.teamOwner === true) roles.push("teamOwner");
-  //   if (userRole.auctionPlayer === true) roles.push("player");
-    
-  //   // If no roles found, treat as new player
-  //   if (roles.length === 0) roles.push("newPlayer");
-    
-  //   return roles;
-  // };
-
-  // Determine the highest priority role
   const getPrimaryRole = (roles) => {
     if (!roles || roles.length === 0) return "newPlayer";
-    
+
     // Find the highest priority role
     for (const role of ROLE_PRIORITY) {
       if (roles.includes(role)) {
         return role;
       }
     }
-    
+
     return roles[0]; // Fallback to first role
   };
 
   // Get all roles and merge allowed tabs (if needed)
   const getAllAllowedTabs = (roles) => {
     const allTabsSet = new Set();
-    
-    roles.forEach(role => {
+
+    roles.forEach((role) => {
       const tabsForRole = roleTabs[role] || [];
-      tabsForRole.forEach(tab => allTabsSet.add(tab));
+      tabsForRole.forEach((tab) => allTabsSet.add(tab));
     });
-    
+
     return Array.from(allTabsSet);
   };
 
   const userRoles = useMemo(() => {
     if (!userRole) return ["newPlayer"];
-    
+
     const roles = [];
-    
+
     // Check each role flag
     if (userRole.admin === true) roles.push("admin");
     if (userRole.selector === true) roles.push("selector");
     if (userRole.teamOwner === true) roles.push("teamOwner");
     if (userRole.auctionPlayer === true) roles.push("player");
-    
+
     // If no roles found, treat as new player
     if (roles.length === 0) roles.push("newPlayer");
-    
+
     return roles;
   }, [userRole]);
   const primaryRole = useMemo(() => getPrimaryRole(userRoles), [userRoles]);
-  
-  // Choose one of these approaches:
-  
-  // APPROACH 1: Use highest priority role only (current behavior)
-  // const allowedTabKeys = useMemo(() => 
-  //   roleTabs[primaryRole] || [], 
-  // [primaryRole]);
-  
-  // APPROACH 2: Merge all tabs from all roles (if user can access multiple role tabs)
-  const allowedTabKeys = useMemo(() => 
-    getAllAllowedTabs(userRoles), 
-  [userRoles]);
+
+  const allowedTabKeys = useMemo(
+    () => getAllAllowedTabs(userRoles),
+    [userRoles]
+  );
 
   const visibleTabs = useMemo(() => {
     return allTabs.filter((tab) => allowedTabKeys.includes(tab.key));
@@ -167,6 +170,21 @@ const AuctionDetails = () => {
       setActiveTab(allowedTabKeys[0]);
     }
   }, [allowedTabKeys, activeTab]);
+
+  const enrollPlayer = async () => {
+    const playerId = localStorage.getItem("playerId");
+
+    try {
+      await dispatch(EnrollPlayer(auctionId, playerId));
+      toast.success("Successfully Registered For The Tournament");
+      setRegisterPopupOpen(false);
+      // dispatch(fetchAuctionDetails(auctionId));
+    } catch (error) {
+      console.error(error);
+      toast.error("Enroll Player Error");
+    }
+  };
+
 
   /* ===============================
      TAB CONTENT RENDER
@@ -187,7 +205,7 @@ const AuctionDetails = () => {
         return <AuctionPlayers auctionId={auctionId} />;
 
       case "teams":
-        return <AuctionTeams auctionId={auctionId} />;
+        return <TeamsTab auctionId={auctionId} />;
 
       case "overview":
         return <AuctionMatches auctionId={auctionId} />;
@@ -199,13 +217,10 @@ const AuctionDetails = () => {
         return <Categories auctionId={auctionId} />;
 
       case "myteam":
-        return <div>My Team Component</div>;
-
-      case "myScore":
-        return <div>My Score Component</div>;
+        return <OwnerTeamDetails auctionId={auctionId} playerId={playerId}/>;
 
       case "assignedPlayers":
-        return <div>Assigned Players Component</div>;
+        return <AssignedPlayersToSelector auctionId={auctionId}/>;
 
       case "trialslot":
         return <TrialSlot auctionId={auctionId} />;
@@ -281,9 +296,14 @@ const AuctionDetails = () => {
 
               {/* CTA */}
               <div className="rounded-xl bg-[#154947] p-4 text-white mt-3">
-                <h3 className="font-semibold mb-2">Get Ready to Compete!</h3>
-                <button className="w-full bg-[var(--color-warm)] text-[#02271E] font-semibold py-2 rounded-lg">
-                  Register / Enroll
+                {userRole.auctionPlayer !== true && <h3 className="font-semibold mb-2">Get Ready to Compete!</h3>}
+                <button className={`w-full  text-[#02271E] font-semibold py-2 rounded-lg ${userRole.auctionPlayer
+                      ? "bg-gray-500 text-gray-200 cursor-not-allowed"
+                      : "bg-[var(--color-warm)] text-black "
+                      }`}
+                onClick={()=>setRegisterPopupOpen(true)}
+                disabled={userRole.auctionPlayer}>
+                 {userRole.auctionPlayer ? "Registered" :"Register / Enroll"} 
                 </button>
               </div>
             </div>
@@ -296,6 +316,12 @@ const AuctionDetails = () => {
             </div>
           </section>
         </div>
+        <RegisterPopup
+          isOpen={registerPopupOpen}
+          onClose={() => setRegisterPopupOpen(false)}
+          onConfirm={enrollPlayer}
+          tournamentId={selectedTournamentId}
+        />
       </main>
 
       <Footer />

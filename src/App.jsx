@@ -10,6 +10,7 @@ import ScrollToTop from './components/ScrollToTop'
 import { ToastContainer } from 'react-toastify'
 import CreateEditAuction from './pages/CreateEditAuction'
 import AdminAuctionControl from './pages/Live_Auction/admin/AdminAuctionControl'
+import BiddingPanel from '../src/pages/Live_Auction/TeamOwner/BiddingPanel'
 
 
 function AppContent() {
@@ -26,6 +27,7 @@ function AppContent() {
       <Route exact path='/today-auction' element={<TodayAuction/>}/>
       <Route exact path="/createAuction" element={<CreateEditAuction/>}/>
       <Route exact path="/editAuction/:auctionId" element={<CreateEditAuction/>}/>
+      <Route exact path="/team-bidding/:auctionId" element={<BiddingPanel/>}/>  
     </Routes>
     </BrowserRouter>
   
