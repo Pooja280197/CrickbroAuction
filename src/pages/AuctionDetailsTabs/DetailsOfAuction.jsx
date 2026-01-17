@@ -50,6 +50,8 @@ const DetailsOfAuction = ({ auctionId }) => {
     
   } = auctionData;
 
+  console.log(auctionData,"auction")
+
   return (
     <div className="space-y-8">
 

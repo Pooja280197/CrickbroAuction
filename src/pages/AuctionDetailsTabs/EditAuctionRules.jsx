@@ -54,7 +54,7 @@ const EditAuctionRules = ({ currentRules, auctionId }) => {
   };
 
   return (
-    <div className="min-h-screen bg-hero-gradient flex justify-center px-2 py-3">
+    <div className="min-h-screen bg-black/50 flex justify-center px-2 py-3">
       <div className="w-full  card-glass flex flex-col">
         {/* HEADER */}
         <div className="py-3 text-center border-b border-white/10">

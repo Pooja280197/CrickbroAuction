@@ -14,8 +14,6 @@ const CreateCategory = ({ isOpen, onClose, onSubmit, initialData }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
  
 
- 
-
   // Initialize form with initialData if provided (for editing)
   useEffect(() => {
     if (initialData) {

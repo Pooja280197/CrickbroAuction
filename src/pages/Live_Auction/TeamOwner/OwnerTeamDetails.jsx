@@ -2,63 +2,62 @@ import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react"; // Optional: if using icons
+import { useDispatch, useSelector } from "react-redux";
+import { fetchPurchasedPlayers, fetchTeamsData } from "../../../redux/actions";
 
 const OwnerTeamDetails = ({ auctionId, playerId }) => {
-  const [teams, setTeams] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+ 
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("team-details");
   const navigate = useNavigate();
-  const [purchasedPlayers, setPurchasedPlayers] = useState([]);
+
+  const loading = useSelector((state) => state.loading?.TeamData || false);
+
+  const teams = useSelector((state) => state.data?.TeamData?.data || null);
+  const purchasedPlayers = useSelector((state) => state.data?.PurchasedPlayers?.data || null);
 
   useEffect(() => {
     if (!auctionId || !playerId) return;
 
     const fetchTeams = async () => {
       try {
-        setLoading(true);
-        const response = await axios.get(
-          `/webSiteApi/auctionTeam/getTeamsByOwnerInAuction/${auctionId}?playerId=${playerId}`
-        );
-       
-        const teamData = response.data?.data?.data || [];
-        setTeams(teamData);
+        await dispatch(fetchTeamsData(auctionId));
       } catch (err) {
         setError("Failed to load team details");
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchTeams();
   }, [auctionId, playerId]);
 
-  useEffect(() => {
-    console.log("Teams fetched:", teams);
-  }, [teams]);
-
-  const team = teams[0];
+  const team = teams?.[0];
   const selectedTeamId = team?.teamId;
 
   useEffect(() => {
     if (!selectedTeamId) return; // Wait until teamId is available
 
-    axios.get(`/webSiteApi/auction/getAllPlayersAdmin/${auctionId}?teamId=${selectedTeamId}`)
-      .then((res) => {
-        const data = res.data?.data?.data || [];
-        setPurchasedPlayers(data);
-      })
-      .catch((err) => console.error(err));
-  }, [selectedTeamId]); 
+     const fetchPlayers = async () => {
+      try {
+        await dispatch(fetchPurchasedPlayers(auctionId,selectedTeamId));
+      } catch (err) {
+        setError("Failed to load team details");
+      }
+    };
 
-  //   if (loading) return (
-  //     <div className="p-8 text-center">
-  //       <div className="inline-flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-white border border-blue-100 shadow-sm">
-  //         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-  //         <span className="text-gray-600">Loading team details...</span>
-  //       </div>
-  //     </div>
-  //   );
+   
+      fetchPlayers()
+  }, [selectedTeamId]);
+
+  if (loading)
+    return (
+      <div className="p-8 text-center">
+        <div className="inline-flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-white border border-blue-100 shadow-sm">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          <span className="text-gray-600">Loading team details...</span>
+        </div>
+      </div>
+    );
 
   if (error)
     return (
@@ -85,7 +84,6 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
 
   const details = team?.teamAuctionDetails;
 
-
   // Handle live bidding navigation
   const handleLiveBiddingClick = () => {
     // navigate(`/team-bidding/${auctionId}`,{state:selectedTeamId});
@@ -102,7 +100,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
           className={`py-4 px-1 border-b-2 font-medium text-sm ${
             activeTab === "team-details"
               ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
           }`}
         >
           Team Details
@@ -112,7 +110,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
           className={`py-4 px-1 border-b-2 font-medium text-sm ${
             activeTab === "my-wallet"
               ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
           }`}
         >
           My Wallet
@@ -122,7 +120,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
           className={`py-4 px-1 border-b-2 font-medium text-sm ${
             activeTab === "live-bidding"
               ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
           }`}
         >
           Live Bidding
@@ -132,7 +130,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
           className={`py-4 px-1 border-b-2 font-medium text-sm ${
             activeTab === "players"
               ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
           }`}
         >
           Players
@@ -145,7 +143,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
   const TeamDetailsTab = () => (
     <div className="space-y-6">
       {/* Main Team Card */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-blue-50 border border-blue-100 shadow-lg shadow-blue-100/50">
+      <div className="relative overflow-hidden rounded-2xl bg-black shadow-lg shadow-gray-900">
         <div className="relative flex items-center gap-5 p-6">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl blur-sm opacity-20"></div>
@@ -169,7 +167,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
               {team?.teamCity}
             </p>
             <div className="flex flex-wrap gap-4 mt-3">
-              <div className="px-3 py-1.5 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-100 shadow-sm">
+              <div className="px-3 py-1.5 bg-black shadow-lg shadow-gray-900 rounded-lg border border-green-100 ">
                 <span className="text-gray-600 text-sm">Budget: </span>
                 <span className="font-bold text-green-700">
                   ₹{details?.remainingBudget?.toLocaleString()}
@@ -178,7 +176,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
                   / {details?.initialBudget?.toLocaleString()}
                 </span>
               </div>
-              <div className="px-3 py-1.5 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg border border-purple-100 shadow-sm">
+              <div className="px-3 py-1.5 bg-black shadow-lg shadow-gray-900 rounded-lg border border-purple-100 ">
                 <span className="text-gray-600 text-sm">RTM Available: </span>
                 <span className="font-bold text-purple-700">
                   {details?.rtmCardsAvailable}
@@ -190,9 +188,9 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
       </div>
 
       {/* Owners Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-purple-50 border border-purple-100 shadow-lg shadow-purple-100/50">
+      <div className="relative overflow-hidden rounded-2xl bg-black shadow-lg shadow-gray-900">
         <div className="relative p-6">
-          <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <div className="w-1.5 h-6 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
             Team Owner(s)
           </h3>
@@ -200,13 +198,13 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
             {team?.owners?.map((owner, index) => (
               <div
                 key={owner?._id}
-                className={`p-4 rounded-xl bg-white border border-purple-50 shadow-sm hover:shadow-md transition-shadow duration-300 hover:border-purple-200 ${
+                className={`p-4 rounded-xl bg-black shadow-lg shadow-gray-900  hover:shadow-md transition-shadow duration-300  ${
                   index === 0 ? "ring-1 ring-purple-100" : ""
                 }`}
               >
                 <div className="flex items-center gap-4">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full blur opacity-20"></div>
+                    <div className="absolute inset-0 bg-black shadow-lg shadow-gray-900 text-white rounded-full blur opacity-20"></div>
                     <img
                       src={owner?.logo}
                       alt={owner?.name}
@@ -214,17 +212,17 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-800 truncate">
+                    <p className="font-semibold text-white truncate">
                       {owner.name}
                     </p>
                     {owner?.email && (
-                      <p className="text-gray-600 text-sm truncate mt-1 flex items-center gap-1">
+                      <p className="text-gray-400 text-sm truncate mt-1 flex items-center gap-1">
                         {/* <span className="w-3 h-3">✉️</span> */}
                         {owner.email}
                       </p>
                     )}
                     {owner?.mobile && (
-                      <p className="text-gray-600 text-sm mt-1 flex items-center gap-1">
+                      <p className="text-gray-400 text-sm mt-1 flex items-center gap-1">
                         {/* <span className="w-3 h-3">📱</span> */}
                         {owner.mobile}
                       </p>
@@ -238,15 +236,15 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
       </div>
 
       {/* Team Rules Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-amber-50 border border-amber-100 shadow-lg shadow-amber-100/50">
+      <div className="relative overflow-hidden rounded-2xl bg-black shadow-lg shadow-gray-900 ">
         <div className="relative p-6">
-          <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <div className="w-1.5 h-6 bg-gradient-to-b from-amber-500 to-amber-600 rounded-full"></div>
             Team Rules & Requirements
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
-              <div className="p-3 bg-white rounded-lg border border-amber-100 shadow-sm">
+              <div className="p-3  rounded-lg border border-amber-100 shadow-sm">
                 <div className="text-sm font-medium text-amber-600 mb-1">
                   Squad Composition
                 </div>
@@ -254,7 +252,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
                   Min {details?.minPlayers} - Max {details?.maxPlayers} players
                 </div>
               </div>
-              <div className="p-3 bg-white rounded-lg border border-amber-100 shadow-sm">
+              <div className="p-3 rounded-lg border border-amber-100 shadow-sm">
                 <div className="text-sm font-medium text-amber-600 mb-1">
                   Foreign Players
                 </div>
@@ -262,7 +260,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
                   Max {details?.maxForeignPlayers} overseas players allowed
                 </div>
               </div>
-              <div className="p-3 bg-white rounded-lg border border-amber-100 shadow-sm">
+              <div className="p-3  rounded-lg border border-amber-100 shadow-sm">
                 <div className="text-sm font-medium text-amber-600 mb-1">
                   Wicket Keepers
                 </div>
@@ -273,7 +271,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
               </div>
             </div>
             <div className="space-y-3">
-              <div className="p-3 bg-white rounded-lg border border-amber-100 shadow-sm">
+              <div className="p-3 rounded-lg border border-amber-100 shadow-sm">
                 <div className="text-sm font-medium text-amber-600 mb-1">
                   Purchase Limits
                 </div>
@@ -282,7 +280,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
                   {details?.maxPurchasePlayers} players per session
                 </div>
               </div>
-              <div className="p-3 bg-white rounded-lg border border-amber-100 shadow-sm">
+              <div className="p-3  rounded-lg border border-amber-100 shadow-sm">
                 <div className="text-sm font-medium text-amber-600 mb-1">
                   Return Players
                 </div>
@@ -290,7 +288,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
                   Maximum {details?.maxReturnPlayers} players can be returned
                 </div>
               </div>
-              <div className="p-3 bg-white rounded-lg border border-amber-100 shadow-sm">
+              <div className="p-3  rounded-lg border border-amber-100 shadow-sm">
                 <div className="text-sm font-medium text-amber-600 mb-1">
                   Team Status
                 </div>
@@ -309,9 +307,9 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
   const MyWalletTab = () => (
     <div className="space-y-6">
       {/* Budget Overview */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-emerald-50 border border-emerald-100 shadow-lg shadow-emerald-100/50">
+      <div className="relative overflow-hidden rounded-2xl bg-black shadow-lg shadow-gray-900 border border-emerald-100 ">
         <div className="relative p-6">
-          <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
             <div className="w-1.5 h-6 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full"></div>
             Budget Overview
           </h3>
@@ -394,7 +392,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
           </div>
 
           {/* Per Player Budget */}
-          <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-white border border-blue-100 shadow-sm">
+          <div className="p-4 rounded-xl bg-black shadow-lg shadow-gray-900 border border-blue-100 ">
             <h4 className="font-semibold text-gray-700 mb-3">
               Average Cost Per Player
             </h4>
@@ -414,14 +412,14 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
       </div>
 
       {/* RTM Cards Status */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-purple-50 border border-purple-100 shadow-lg shadow-purple-100/50">
+      <div className="relative overflow-hidden rounded-2xl bg-black shadow-lg shadow-gray-900 border border-purple-100 ">
         <div className="relative p-6">
-          <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <div className="w-1.5 h-6 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
             RTM Cards Status
           </h3>
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl bg-white border border-purple-100 shadow-sm">
+            <div className="p-4 rounded-xl bg-black shadow-lg shadow-gray-900 border border-purple-100 ">
               <div className="text-sm font-medium text-purple-600 mb-1">
                 Available
               </div>
@@ -429,7 +427,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
                 {details?.rtmCardsAvailable}
               </div>
             </div>
-            <div className="p-4 rounded-xl bg-white border border-purple-100 shadow-sm">
+            <div className="p-4 rounded-xl bg-black shadow-lg shadow-gray-900 border border-purple-100 ">
               <div className="text-sm font-medium text-gray-600 mb-1">Used</div>
               <div className="text-2xl font-bold text-gray-700">
                 {details?.rtmCardsUsed}
@@ -444,7 +442,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
   // Live Bidding Tab
   const LiveBiddingTab = () => (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-orange-50 border border-orange-100 shadow-lg shadow-orange-100/50">
+      <div className="relative overflow-hidden rounded-2xl bg-black shadow-lg shadow-gray-900 border border-orange-100 ">
         <div className="relative p-8">
           {/* Decorative elements */}
 
@@ -458,14 +456,14 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
             </svg>
           </div>
 
-          <div className="relative max-w-2xl mx-auto text-center">
+          <div className="relative max-w-2xl mx-auto text-center ">
             {/* Icon */}
             <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
               <span className="text-3xl">🏏</span>
             </div>
 
             {/* Heading */}
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">
+            <h2 className="text-3xl font-bold text-white mb-4">
               Ready for Live Bidding?
             </h2>
 
@@ -561,16 +559,16 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
 
     return (
       <div className="space-y-6">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-sky-50 border border-sky-100 shadow-lg shadow-sky-100/50">
+        <div className="relative overflow-hidden rounded-2xl bg-black shadow-lg shadow-gray-900 border border-sky-100 ">
           <div className="relative p-6">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <div className="w-1.5 h-6 bg-gradient-to-b from-sky-500 to-sky-600 rounded-full"></div>
                 Squad Players ({players?.length})
               </h3>
 
-              <div className="px-3 py-1.5 bg-gradient-to-r from-sky-50 to-blue-50 rounded-lg border border-sky-200">
+              <div className="px-3 py-1.5 bg-black shadow-lg shadow-gray-900 rounded-lg border border-sky-200">
                 <span className="text-sm font-medium text-sky-700">
                   Total Spent: ₹{totalSpent?.toLocaleString()}
                 </span>
@@ -582,13 +580,13 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
               {players?.map((p) => (
                 <div
                   key={p.playerId}
-                  className="group relative overflow-hidden rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:border-sky-200"
+                  className="group relative overflow-hidden rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:border-sky-200"
                 >
                   <div className="p-4">
                     {/* TOP SECTION */}
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <h4 className="font-bold text-gray-800 group-hover:text-sky-700 transition-colors">
+                        <h4 className="font-bold text-white group-hover:text-sky-700 transition-colors">
                           {p.player?.name}
                         </h4>
 
@@ -651,11 +649,11 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
 
             {/* SUMMARY SECTION */}
             <div className="mt-8 pt-6 border-t border-gray-200">
-              <h4 className="font-semibold text-gray-700 mb-4">
+              <h4 className="font-semibold text-gray-400 mb-4">
                 Squad Summary
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-3 rounded-lg bg-gradient-to-r from-gray-50 to-white border border-gray-200">
+                <div className="p-3 rounded-lg bg-black shadow-lg shadow-gray-900 border border-gray-200">
                   <div className="text-xs text-gray-500 mb-1">
                     Total Players
                   </div>
@@ -664,7 +662,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg bg-gradient-to-r from-green-50 to-white border border-green-200">
+                <div className="p-3 rounded-lg bg-black shadow-lg shadow-gray-900 to-white border border-green-200">
                   <div className="text-xs text-gray-500 mb-1">
                     Indian Players
                   </div>
@@ -673,7 +671,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg bg-gradient-to-r from-purple-50 to-white border border-purple-200">
+                <div className="p-3 rounded-lg bg-black shadow-lg shadow-gray-900 to-white border border-purple-200">
                   <div className="text-xs text-gray-500 mb-1">
                     Foreign Players
                   </div>
@@ -682,7 +680,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg bg-gradient-to-r from-amber-50 to-white border border-amber-200">
+                <div className="p-3 rounded-lg bg-black shadow-lg shadow-gray-900 to-white border border-amber-200">
                   <div className="text-xs text-gray-500 mb-1">
                     Average Rating
                   </div>
@@ -709,10 +707,10 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
             className="w-16 h-16 rounded-xl border-2 border-white shadow-lg"
           />
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">
+            <h1 className="text-2xl font-bold text-white">
               {team?.teamName}
             </h1>
-            <p className="text-gray-600">{team?.teamCity}</p>
+            <p className="text-gray-300">{team?.teamCity}</p>
           </div>
         </div>
       </div>

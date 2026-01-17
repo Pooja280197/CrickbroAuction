@@ -1,8 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { Eye, MapPin, Clock, Calendar, X, Star, CalendarCheck } from 'lucide-react';
-import axios from 'axios';
-import { toast } from 'react-toastify';
-const DUMMY_IMAGE_URL = "https://crickbro.s3.ap-south-1.amazonaws.com/uploads/dummyImage.png";
+import React, { useEffect, useState } from "react";
+import {
+  Eye,
+  MapPin,
+  Clock,
+  Calendar,
+  X,
+  Star,
+  CalendarCheck,
+} from "lucide-react";
+import axios from "axios";
+import { toast } from "react-toastify";
+const DUMMY_IMAGE_URL =
+  "https://crickbro.s3.ap-south-1.amazonaws.com/uploads/dummyImage.png";
 
 // Color gradients for initials
 const gradients = [
@@ -21,16 +30,15 @@ const gradients = [
 ];
 
 const getGradientByName = (name) => {
-  const hash = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const hash = name
+    ?.split("")
+    ?.reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return gradients[hash % gradients.length];
 };
 
-const isDummyImage = (imageUrl)=> {
+const isDummyImage = (imageUrl) => {
   return imageUrl === DUMMY_IMAGE_URL;
 };
-
-
-
 
 const formatTime = (time) => {
   if (!time) return "";
@@ -55,14 +63,14 @@ const formatRole = (role) => {
   return role.charAt(0).toUpperCase() + role.slice(1)?.toLowerCase();
 };
 
-const RatingInput= ({ label, value, setValue }) => {
+const RatingInput = ({ label, value, setValue }) => {
   const increase = () => value < 10 && setValue(value + 1);
   const decrease = () => value > 1 && setValue(value - 1);
 
   return (
     <div className="space-y-1">
       <div className="flex justify-between items-center">
-        <span className="text-sm font-medium text-gray-700">{label}</span>
+        <span className="text-sm font-medium text-gray-400">{label}</span>
         <span className="text-sm font-semibold">{value}/10</span>
       </div>
 
@@ -70,7 +78,7 @@ const RatingInput= ({ label, value, setValue }) => {
         <button
           type="button"
           onClick={decrease}
-          className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full"
+          className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-black  rounded-full"
         >
           -
         </button>
@@ -86,7 +94,7 @@ const RatingInput= ({ label, value, setValue }) => {
         <button
           type="button"
           onClick={increase}
-          className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full"
+          className="w-8 h-8 flex items-center justify-center bg-black rounded-full"
         >
           +
         </button>
@@ -95,160 +103,185 @@ const RatingInput= ({ label, value, setValue }) => {
   );
 };
 
-const RatingForm = ({
-  player,
-  onClose,
-  onSubmit
-}) => {
+const RatingForm = ({ player, onClose, onSubmit, ratingFields }) => {
+  const [ratingType, setRatingType] = useState("");
+  const [rating, setRating] = useState(0);
+  const [comments, setComments] = useState("");
+  const [fieldValues, setFieldValues] = useState({});
 
- 
-  const [ratingType, setRatingType] = useState('');
-  const [attitude, setAttitude] = useState(0);
-  const [batsman, setBatting] = useState(0);
-  const [bowler, setBowling] = useState(0);
-  const [fielding, setFielding] = useState(0);
-  const [wicketKeeper, setWicketKeeper] = useState(0);
+  // Check if player already has a rating
+  const hasExistingRating =
+    player.rating && player.rating.ratings && player.rating.ratings.length > 0;
 
-  // Check if player has existing rating
-  const hasExistingRating = player.rating?.ratings && player.rating.ratings.length > 0;
-  const isRatingTypeEditable = !hasExistingRating;
+  // Get existing rating data
+  const existingRating = hasExistingRating ? player.rating.ratings[0] : null;
 
-  const handleSubmit = async () => {
-    // Use the correct player ID from the data structure
-    const playerId = (player )._id || player.id;
-
-    // Construct rating data based on player type
-    const ratingData= {
-      playerId: playerId,
-      playerType: ratingType,
-      ratings: [{
-        selectorId: localStorage.getItem('playerId'), // Changed from 'playerId' to 'selectorId'
-        attitude,
-        submittedAt: new Date().toISOString()
-      }]
-    };
-
-    // Add specific rating fields based on player type
-    if (ratingType === 'wicketkeeper') {
-      // For wicketkeeper, store wicket keeping value in fielding key
-      ratingData.ratings[0].fielding = wicketKeeper;
-      ratingData.ratings[0].wicketKeeper = wicketKeeper;
-       ratingData.ratings[0].batsman = batsman; // Also store in wicketKeeper for consistency
-    } else {
-      // For non-wicketkeeper types, add fielding as normal
-      ratingData.ratings[0].fielding = fielding;
-
-      // Add batting/bowling based on type
-      if (ratingType === 'batsman' || ratingType === 'allrounder') {
-        ratingData.ratings[0].batsman = batsman;
-      }
-      if (ratingType === 'bowler' || ratingType === 'allrounder') {
-        ratingData.ratings[0].bowler = bowler;
-      }
-    }
-
-    try {
-      // Check if we have session and slot information
-      if (player.sessions && player.sessions.length > 0) {
-        const session = player.sessions[0];
-        const res = await axios.post(
-          `/webSiteApi/auctionSelector/ratePlayer/${session.slotId}/${session.sessionId}`,
-          ratingData
-        );
-        toast.success('Scores Submitted Successfully');
-        onSubmit(ratingData);
-      } else {
-        // Fallback to using the old properties if sessions array doesn't exist
-        if (player.slotId && player.sessionId) {
-          const res = await axios.post(
-            `/webSiteApi/auctionSelector/ratePlayer/${player.slotId}/${player.sessionId}`,
-            ratingData
-          );
-          toast.success('Scores Submitted Successfully');
-          onSubmit(ratingData);
-        } else {
-          toast.error('Missing session or slot information');
-        }
-      }
-    } catch (error) {
-      console.error("Error submitting scores:", error);
-      const errorMessage = error.response?.data?.message || 'Failed to submit scores';
-      toast.error(errorMessage);
-    }
-
-    onClose();
-  };
+  console.log("Existing rating data:", existingRating);
+  console.log("Rating fields:", ratingFields);
 
   // Initialize values with existing rating if available
   useEffect(() => {
-    if (hasExistingRating) {
-      const latestRating = player.rating.ratings[0];
+    if (hasExistingRating && existingRating) {
+      // Set rating type - check multiple possible locations
+      const existingRatingType =
+        player.rating.playerType ||
+        player.player?.playerType ||
+        existingRating.playerType;
 
-      // Set common fields
-      setAttitude(latestRating.attitude || 0);
-
-      // Set rating type from existing data - this will be disabled
-      if (latestRating.playerType) {
-        setRatingType(latestRating.playerType);
-      } else {
-        // Fallback to determining from player role
-        const role = (player.playerType)?.toLowerCase();
-        if (role?.includes('bat')) setRatingType('batsman');
-        else if (role?.includes('bowl')) setRatingType('bowler');
-        else if (role?.includes('all')) setRatingType('allrounder');
-        else if (role?.includes('wicket')) setRatingType('wicketkeeper');
+      if (existingRatingType) {
+        setRatingType(existingRatingType.toLowerCase());
       }
 
-      // Set specific rating fields based on player type
-      const playerType = latestRating.playerType || ratingType;
-
-      if (playerType === 'wicketkeeper') {
-        // For wicketkeeper, get value from fielding OR wicketKeeper field
-        const wkValue = latestRating.wicketKeeper || latestRating.fielding || 0;
-        setWicketKeeper(wkValue);
-      } else {
-        // For non-wicketkeeper types
-        setFielding(latestRating.fielding || 0);
-
-        if (playerType === 'batsman' || playerType === 'allrounder') {
-          setBatting(latestRating.batsman || 0);
-        }
-
-        if (playerType === 'bowler' || playerType === 'allrounder') {
-          setBowling(latestRating.bowler || 0);
-        }
+      // Set rating value - prioritize avgRating, then rating from ratings array
+      if (player.rating.avgRating !== undefined) {
+        setRating(player.rating.avgRating);
+      } else if (existingRating.rating !== undefined) {
+        setRating(existingRating.rating);
       }
+
+      // Set comments if available
+      if (existingRating.comments) {
+        setComments(existingRating.comments);
+      }
+
+      // Initialize field values from existing rating
+      const initialFieldValues = {};
+
+      // First, try to get fields from existingRating.field
+      if (existingRating.field && Array.isArray(existingRating.field)) {
+        existingRating.field.forEach((field) => {
+          // Find matching field from ratingFields by label
+          if (ratingFields && Array.isArray(ratingFields)) {
+            const matchingField = ratingFields.find(
+              (f) => f.label === field.label
+            );
+            if (matchingField) {
+              // Check if it's a number field or string field
+              if (field.type === "number" && field.numberValue !== undefined) {
+                initialFieldValues[matchingField._id] =
+                  field.numberValue.toString();
+              } else if (
+                field.type === "string" &&
+                field.stringValue !== undefined
+              ) {
+                initialFieldValues[matchingField._id] = field.stringValue;
+              } else if (field.value !== undefined) {
+                // Fallback for generic value field
+                initialFieldValues[matchingField._id] = field.value;
+              }
+            }
+          }
+        });
+      }
+
+      // Fill in any missing fields with empty values
+      if (ratingFields && Array.isArray(ratingFields)) {
+        ratingFields.forEach((field) => {
+          if (!(field._id in initialFieldValues)) {
+            initialFieldValues[field._id] = "";
+          }
+        });
+      }
+
+      console.log("Initialized field values:", initialFieldValues);
+      setFieldValues(initialFieldValues);
     } else {
-      // If no existing rating, set rating type based on player role
-      const role = (player.playerRole || player.type)?.toLowerCase();
-      if (role?.includes('bat')) setRatingType('batsman');
-      else if (role?.includes('bowl')) setRatingType('bowler');
-      else if (role?.includes('all')) setRatingType('allrounder');
-      else if (role?.includes('wicket')) setRatingType('wicketkeeper');
+      // No existing rating, set rating type from player data
+      const role = player.player?.playerType?.toLowerCase();
+      if (role) {
+        setRatingType(role);
+      }
+
+      // Initialize empty field values
+      const initialFieldValues = {};
+      if (ratingFields && Array.isArray(ratingFields)) {
+        ratingFields.forEach((field) => {
+          initialFieldValues[field._id] = "";
+        });
+      }
+      setFieldValues(initialFieldValues);
     }
-  }, [player]);
+  }, [player, ratingFields, hasExistingRating, existingRating]);
 
-  const ratingTypes = [
-    { value: 'batsman', label: 'Batsman' },
-    { value: 'bowler', label: 'Bowler' },
-    { value: 'allrounder', label: 'All Rounder' },
-    { value: 'wicketkeeper', label: 'Wicket Keeper' },
-  ];
+  const handleSubmit = async () => {
+    // Use the correct player ID from the data structure
+    const playerId = player.player?._id || player.auctionPlayerId;
 
-  // Function to get display name for player type
-  const getPlayerTypeDisplayName = (type) => {
-    const typeMap = {
-      'batsman': 'Batsman',
-      'bowler': 'Bowler',
-      'allrounder': 'All Rounder',
-      'wicketkeeper': 'Wicket Keeper'
+    // Prepare field array based on ratingFields
+    const fieldData =
+      ratingFields?.map((field) => {
+        const value = fieldValues[field._id] || "";
+
+        return {
+          label: field.label,
+          type: field.type,
+          // Use correct property name based on your data structure
+          ...(field.type === "string"
+            ? { stringValue: value }
+            : { numberValue: parseFloat(value) || 0 }),
+        };
+      }) || [];
+
+    // Construct rating data
+    const ratingData = {
+      playerId: playerId,
+      playerType: ratingType,
+      selectorId: localStorage.getItem("playerId"), // This should be the selector's ID
+      rating: rating,
+      comments: comments,
+      field: fieldData,
     };
-    return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1);
+
+    try {
+      // Check if we have session and slot information
+      if (player.session && player.session._id) {
+        const sessionId = player.session._id;
+
+        // Use slotId if available in session, otherwise use sessionId
+        const slotId = player.session.slot?._id || sessionId;
+
+        // Make API call - note the endpoint might need adjustment
+        const res = await axios.post(
+          `/webSiteApi/auctionSelector/ratePlayer/${slotId}/${sessionId}`,
+          ratingData
+        );
+
+        toast.success(
+          hasExistingRating
+            ? "Rating Updated Successfully"
+            : "Rating Submitted Successfully"
+        );
+        onSubmit(ratingData); // Call parent callback
+        onClose(); // Close the modal
+      } else {
+        toast.error("Missing session information");
+      }
+    } catch (error) {
+      console.error("Error submitting rating:", error);
+      const errorMessage =
+        error.response?.data?.message || "Failed to submit rating";
+      toast.error(errorMessage);
+    }
   };
+
+  const handleFieldChange = (fieldId, value) => {
+    setFieldValues((prev) => ({
+      ...prev,
+      [fieldId]: value,
+    }));
+  };
+
+  // Player type options based on available data
+  const playerTypeOptions = [
+    { value: "batsman", label: "Batsman" },
+    { value: "bowler", label: "Bowler" },
+    { value: "allrounder", label: "All Rounder" },
+    { value: "wicketkeeper", label: "Wicket Keeper" },
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-md">
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg mx-2 overflow-hidden">
+      <div className="relative bg-black rounded-xl shadow-xl w-full max-w-sm sm:max-w-md mx-2 overflow-hidden">
         <button
           type="button"
           onClick={onClose}
@@ -257,104 +290,171 @@ const RatingForm = ({
           <X className="w-4 h-4 text-gray-700" />
         </button>
 
-        <div className="p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Trials Scoring</h2>
-          <p className="text-gray-600 mb-6">Please provide scores for {player.batchId}</p>
+        <div className="p-4 sm:p-5">
+          <h2 className="text-lg sm:text-xl font-semibold text-white mb-1">
+            {hasExistingRating ? "Update Player Rating" : "Player Rating"}
+          </h2>
+          <p className="text-gray-400 text-sm mb-4">
+            {hasExistingRating ? "Update rating for" : "Rate player"}:{" "}
+            {player.player?.name || "Unknown Player"}
+          </p>
 
-          {/* Rating Type Section */}
+          {/* Player Type Dropdown */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-medium text-gray-400 mb-1">
+
               Player Type
             </label>
-
-            {hasExistingRating ? (
-              // Display player type as read-only when rating exists
-              <div className="flex items-center gap-2">
-                <div className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                  <span className="font-medium text-gray-800">
-                    {getPlayerTypeDisplayName(ratingType)}
-                  </span>
-                </div>
-                {/* <div className="px-3 py-2 bg-green-100 text-green-800 rounded-lg text-sm font-medium">
-                  Already Rated
-                </div> */}
-              </div>
-            ) : (
-              // Show dropdown when no rating exists
-              <select
-                value={ratingType}
-                onChange={(e) => {
-                  setRatingType(e.target.value);
-                  // Reset specific ratings when type changes
-                  if (e.target.value === 'wicketkeeper') {
-                    setWicketKeeper(0);
-                  } else {
-                    setFielding(0);
-                    if (e.target.value !== 'batsman') setBowling(0);
-                    if (e.target.value !== 'bowler') setBatting(0);
-                  }
-                }}
-                className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                required
-              >
-                <option value="" disabled hidden>
-                  Select Type
+            <select
+              value={ratingType}
+              onChange={(e) => setRatingType(e.target.value)}
+              className="w-full px-3 py-1.5 text-sm bg-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-white"
+              disabled={hasExistingRating}
+            >
+              <option value="" disabled hidden>
+                Select Player Type
+              </option>
+              {playerTypeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
-                {ratingTypes.map(type => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
-            )}
-
+              ))}
+            </select>
             {hasExistingRating && (
-              <p className="mt-1 text-sm text-gray-500">
-                Player type cannot be changed once rated. To change player type, contact administrator.
+              <p className="mt-1 text-sm text-yellow-500">
+                Player type cannot be changed once rated.
               </p>
             )}
           </div>
 
-          {/* Rating Bars - Only show if rating type is selected or exists */}
-          {(ratingType || hasExistingRating) && (
-            <div className="space-y-6">
-              {/* Common for all types */}
-              <RatingInput label="Attitude" value={attitude} setValue={setAttitude} />
+          {/* Overall Rating (0-10) */}
+          <div className="mb-6">
+            <label className="block text-xs font-medium text-gray-400 mb-1">
+              Overall Rating (0-10)
+            </label>
+            <div className="flex items-center space-x-4">
+              <input
+                type="range"
+                min="0"
+                max="10"
+                step="0.5"
+                value={rating}
+                onChange={(e) => setRating(parseFloat(e.target.value))}
+                className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+              />
+              <span className="text-white text-sm font-medium w-10 text-center">
 
-              {/* Batsman rating → batsman, allrounder, wicketkeeper */}
-              {(ratingType === "batsman" ||
-                ratingType === "allrounder" ||
-                ratingType === "wicketkeeper") && (
-                  <RatingInput label="Batsman" value={batsman} setValue={setBatting} />
-                )}
+                {rating}
+              </span>
+            </div>
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>0</span>
+              <span>5</span>
+              <span>10</span>
+            </div>
+            {hasExistingRating && (
+              <p className="mt-1 text-sm text-gray-500">
+                Current rating:{" "}
+                {player.rating?.avgRating ||
+                  existingRating?.rating ||
+                  "Not rated"}
+              </p>
+            )}
+          </div>
 
-              {/* Bowler rating → bowler, allrounder */}
-              {(ratingType === "bowler" || ratingType === "allrounder") && (
-                <RatingInput label="Bowler" value={bowler} setValue={setBowling} />
-              )}
+          {/* Dynamic Rating Fields */}
+          {ratingFields && ratingFields.length > 0 && (
+            <div className="mb-6">
+              <label className="block text-xs font-medium text-gray-400 mb-1">
 
-              {/* Fielding → ALL types except wicketkeeper special case */}
-              {(ratingType !== "wicketkeeper" && ratingType !== "") && (
-                <RatingInput label="Fielding" value={fielding} setValue={setFielding} />
-              )}
+                Additional Fields {hasExistingRating && "(Current Values)"}
+              </label>
+              <div className="space-y-3">
+                {ratingFields.map((field) => {
+                  // Find existing value for this field
+                  const existingField = existingRating?.field?.find(
+                    (f) => f.label === field.label
+                  );
+                  const existingValue = existingField
+                    ? field.type === "number"
+                      ? existingField.numberValue
+                      : existingField.stringValue
+                    : null;
 
-              {/* Wicket Keeper → only wicketkeeper type */}
-              {ratingType === "wicketkeeper" && (
-                <RatingInput
-                  label="Wicket Keeping"
-                  value={wicketKeeper}
-                  setValue={setWicketKeeper}
-                />
-              )}
+                  return (
+                    <div
+                      key={field._id}
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+                    >
+                      <div className="flex flex-col">
+                        <label className="text-gray-300 text-sm">
+                          {field.label}
+                        </label>
+                        {hasExistingRating && existingValue !== null && (
+                          <span className="text-xs text-gray-500">
+                            Current: {existingValue}
+                          </span>
+                        )}
+                      </div>
+                      {field.type === "number" ? (
+                        <input
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.5"
+                          value={fieldValues[field._id] || ""}
+                          onChange={(e) =>
+                            handleFieldChange(field._id, e.target.value)
+                          }
+                          className="w-full sm:w-20 px-2 py-1 text-sm bg-black border border-gray-300 rounded text-white text-right"
+
+                          placeholder="0-10"
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          value={fieldValues[field._id] || ""}
+                          onChange={(e) =>
+                            handleFieldChange(field._id, e.target.value)
+                          }
+                          className="w-full sm:w-28 px-2 py-1 text-sm bg-black border border-gray-300 rounded text-white"
+
+                          placeholder="Enter value"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
-          {/* Submit Button */}
+          {/* Comments */}
+          <div className="mb-6">
+            <label className="block text-xs font-medium text-gray-400 mb-1">
+
+              Comments
+            </label>
+            <textarea
+              value={comments}
+              onChange={(e) => setComments(e.target.value)}
+              className="w-full h-20 px-3 py-2 text-sm bg-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-white resize-none"
+              placeholder="Add your comments here..."
+              rows="3"
+            />
+            {hasExistingRating && existingRating?.comments && (
+              <p className="mt-1 text-sm text-gray-500">
+                Previous comment: {existingRating.comments}
+              </p>
+            )}
+          </div>
+
+          {/* Action Buttons */}
           <div className="mt-8 flex flex-col sm:flex-row gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="flex-1 px-4 py-3 border border-gray-300 text-gray-400 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition-colors font-medium"
             >
               Cancel
             </button>
@@ -363,12 +463,13 @@ const RatingForm = ({
               type="button"
               onClick={handleSubmit}
               disabled={!ratingType}
-              className={`flex-1 px-4 py-2 rounded-lg transition-colors font-medium ${ratingType
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
+              className={`flex-1 px-4 py-3 rounded-lg transition-colors font-medium ${
+                ratingType
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
             >
-              {hasExistingRating ? "Update Scores" : "Submit Scores"}
+              {hasExistingRating ? "Update Rating" : "Submit Rating"}
             </button>
           </div>
         </div>
@@ -377,21 +478,18 @@ const RatingForm = ({
   );
 };
 
-
 const PlayerDetailsModal = ({
   player,
   isOpen,
   onClose,
   onRate,
   selector,
-  fetchSelectorPlayers
+  fetchSelectorPlayers,
+  ratingFields = { ratingFields },
 }) => {
-
   const [showRatingForm, setShowRatingForm] = useState(false);
-  const slotId = player?.sessions?.[0]?.slotId
-  const sessionId = player?.sessions?.[0]?.sessionId
-
-
+  const slotId = player?.session?.slot?._id;
+  const sessionId = player?.session?._id;
   if (!isOpen || !player) return null;
 
   if (showRatingForm) {
@@ -403,9 +501,9 @@ const PlayerDetailsModal = ({
           onClose();
         }}
         onSubmit={(rating) => {
-
           if (onRate) onRate(player);
         }}
+        ratingFields={ratingFields}
       />
     );
   }
@@ -420,20 +518,21 @@ const PlayerDetailsModal = ({
     const latestRating = player.rating.ratings[0];
 
     // Determine the player type
-    const playerType = latestRating.playerType ||
-      (player.playerRole || player.type)?.toLowerCase();
+    const playerType =
+      latestRating.playerType ||
+      player?.rating?.playerType ||
+      player.player?.playerType?.toLowerCase();
 
     // For wicketkeeper, wicket keeping value could be in wicketKeeper OR fielding
-    const isWicketkeeper = playerType?.includes('wicket') ||
-      latestRating.playerType === 'wicketkeeper';
+    const isWicketkeeper =
+      playerType?.includes("wicket") ||
+      latestRating.playerType === "wicketkeeper";
 
-    const wicketKeeperValue = isWicketkeeper ?
-      (latestRating.wicketKeeper || latestRating.fielding || 0) :
-      (latestRating.wicketKeeper || 0);
+    const wicketKeeperValue = isWicketkeeper
+      ? latestRating.wicketKeeper || latestRating.fielding || 0
+      : latestRating.wicketKeeper || 0;
 
-    const fieldingValue = !isWicketkeeper ?
-      (latestRating.fielding || 0) :
-      0;
+    const fieldingValue = !isWicketkeeper ? latestRating.fielding || 0 : 0;
 
     return {
       attitude: latestRating.attitude || 0,
@@ -441,19 +540,17 @@ const PlayerDetailsModal = ({
       bowler: latestRating.bowler || 0,
       fielding: fieldingValue,
       wicketKeeper: wicketKeeperValue,
-      playerType: latestRating.playerType || playerType || '',
-      avgRating: player.rating.avgRating || 0
+      playerType: latestRating.playerType || playerType || "",
+      avgRating: player.rating.avgRating || 0,
     };
   };
 
   const ratingDetails = getRatingDetails();
-  const session = player.sessions?.[0]; // Get first session if exists
-
-
+  const session = player.session; // Get first session if exists
 
   const handleRemoveRating = async () => {
     // Check if we have the required IDs
-    if (!slotId || !sessionId || !player?._id) {
+    if (!slotId || !sessionId || !player?.auctionPlayerId) {
       toast.error("Missing required information to remove rating");
       return;
     }
@@ -465,18 +562,21 @@ const PlayerDetailsModal = ({
         return;
       }
 
-      const res = await axios.post(`/webSiteApi/auctionSelector/removePlayerRating/${slotId}/${sessionId}`, {
-        playerId: player._id,  // Fixed the syntax here
-        selectorId: selectorId
-      });
-      fetchSelectorPlayers()
-
+      const res = await axios.post(
+        `/webSiteApi/auctionSelector/removePlayerRating/${slotId}/${sessionId}`,
+        {
+          playerId: player.auctionPlayerId, // Fixed the syntax here
+          selectorId: selectorId,
+        }
+      );
+      fetchSelectorPlayers();
       toast.success("Rating removed successfully");
       // Optionally refresh the player data or close modal
       onClose();
     } catch (error) {
       console.error("Unable to delete rating", error);
-      const errorMessage = error.response?.data?.message || 'Failed to remove rating';
+      const errorMessage =
+        error.response?.data?.message || "Failed to remove rating";
       toast.error(errorMessage);
     }
   };
@@ -495,37 +595,48 @@ const PlayerDetailsModal = ({
           {/* Header with Player Info */}
           <div className="flex items-center gap-4 mb-6">
             <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200">
-              {player.image && !isDummyImage(player.image) ? (
+              {player?.player?.logo && !isDummyImage(player?.player?.logo) ? (
                 <img
-                  src={player.image}
-                  alt={player.name}
+                  src={player?.player?.logo}
+                  alt={player?.player?.name}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    (e.target ).style.display = 'none';
-                    const parent = (e.target ).parentElement;
+                    e.target.style.display = "none";
+                    const parent = e.target.parentElement;
                     if (parent) {
-                      const initialsDiv = document.createElement('div');
-                      initialsDiv.className = `w-full h-full flex items-center justify-center bg-gradient-to-br ${getGradientByName(player.name)} text-white font-bold`;
-                      initialsDiv.textContent = getInitials(player.name);
+                      const initialsDiv = document.createElement("div");
+                      initialsDiv.className = `w-full h-full flex items-center justify-center bg-gradient-to-br ${getGradientByName(
+                        player.player.name
+                      )} text-white font-bold`;
+                      initialsDiv.textContent = getInitials(player.player.name);
                       parent.appendChild(initialsDiv);
                     }
                   }}
                 />
               ) : (
-                <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${getGradientByName(player.name)} text-white font-bold`}>
-                  {getInitials(player.name)}
+                <div
+                  className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${getGradientByName(
+                    player.player.name
+                  )} text-white font-bold`}
+                >
+                  {getInitials(player?.player?.name)}
                 </div>
               )}
             </div>
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-gray-900"> {player.batchId}</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                {" "}
+                {player?.player?.batchId}
+              </h2>
               <div className="flex flex-wrap gap-2 mt-2">
                 <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                  {formatRole(player.playerRole || player.type)}
+                  {formatRole(
+                    player?.rating?.playerType || player.player?.playerType
+                  )}
                 </span>
-                {player.batchId && (
+                {player?.player?.batchId && (
                   <span className="inline-block px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
-
+                    {player.player.batchId}
                   </span>
                 )}
               </div>
@@ -535,7 +646,9 @@ const PlayerDetailsModal = ({
           {/* Rating Section */}
           {ratingDetails && (
             <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4">
-              <h3 className="font-semibold text-gray-900 mb-3 text-lg">Player Ratings</h3>
+              <h3 className="font-semibold text-gray-900 mb-3 text-lg">
+                Player Ratings
+              </h3>
               {/* <div className="flex items-center justify-between mb-3">
                 <div>
                   <span className="text-sm text-gray-600">Average Rating</span>
@@ -559,9 +672,13 @@ const PlayerDetailsModal = ({
               <div className="grid grid-cols-2 gap-3">
                 {ratingDetails.attitude > 0 && (
                   <div className="bg-white rounded-lg p-3 shadow-sm">
-                    <span className="text-sm text-gray-600 block">Attitude</span>
+                    <span className="text-sm text-gray-600 block">
+                      Attitude
+                    </span>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="font-bold text-gray-900">{ratingDetails.attitude}/10</span>
+                      <span className="font-bold text-gray-900">
+                        {ratingDetails.attitude}/10
+                      </span>
                       <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-green-500"
@@ -572,26 +689,33 @@ const PlayerDetailsModal = ({
                   </div>
                 )}
 
-                {ratingDetails.batsman > 0 && ratingDetails.playerType === 'batsman' && (
-                  <div className="bg-white rounded-lg p-3 shadow-sm">
-                    <span className="text-sm text-gray-600 block">Batting</span>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="font-bold text-gray-900">{ratingDetails.batsman}/10</span>
-                      <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-blue-500"
-                          style={{ width: `${ratingDetails.batsman * 10}%` }}
-                        />
+                {ratingDetails.batsman > 0 &&
+                  ratingDetails.playerType === "batsman" && (
+                    <div className="bg-white rounded-lg p-3 shadow-sm">
+                      <span className="text-sm text-gray-600 block">
+                        Batting
+                      </span>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="font-bold text-gray-900">
+                          {ratingDetails.batsman}/10
+                        </span>
+                        <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-blue-500"
+                            style={{ width: `${ratingDetails.batsman * 10}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {ratingDetails.bowler > 0 && (
                   <div className="bg-white rounded-lg p-3 shadow-sm">
                     <span className="text-sm text-gray-600 block">Bowling</span>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="font-bold text-gray-900">{ratingDetails.bowler}/10</span>
+                      <span className="font-bold text-gray-900">
+                        {ratingDetails.bowler}/10
+                      </span>
                       <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-red-500"
@@ -602,42 +726,56 @@ const PlayerDetailsModal = ({
                   </div>
                 )}
 
-                {ratingDetails.fielding > 0 && ratingDetails.playerType !== 'wicketkeeper' && (
-                  <div className="bg-white rounded-lg p-3 shadow-sm">
-                    <span className="text-sm text-gray-600 block">Fielding</span>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="font-bold text-gray-900">{ratingDetails.fielding}/10</span>
-                      <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-purple-500"
-                          style={{ width: `${ratingDetails.fielding * 10}%` }}
-                        />
+                {ratingDetails.fielding > 0 &&
+                  ratingDetails.playerType !== "wicketkeeper" && (
+                    <div className="bg-white rounded-lg p-3 shadow-sm">
+                      <span className="text-sm text-gray-600 block">
+                        Fielding
+                      </span>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="font-bold text-gray-900">
+                          {ratingDetails.fielding}/10
+                        </span>
+                        <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-purple-500"
+                            style={{ width: `${ratingDetails.fielding * 10}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {ratingDetails.wicketKeeper > 0 && ratingDetails.playerType === 'wicketkeeper' && (
-                  <div className="bg-white rounded-lg p-3 shadow-sm">
-                    <span className="text-sm text-gray-600 block">Wicket Keeping</span>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="font-bold text-gray-900">{ratingDetails.wicketKeeper}/10</span>
-                      <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-amber-500"
-                          style={{ width: `${ratingDetails.wicketKeeper * 10}%` }}
-                        />
+                {ratingDetails.wicketKeeper > 0 &&
+                  ratingDetails.playerType === "wicketkeeper" && (
+                    <div className="bg-white rounded-lg p-3 shadow-sm">
+                      <span className="text-sm text-gray-600 block">
+                        Wicket Keeping
+                      </span>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="font-bold text-gray-900">
+                          {ratingDetails.wicketKeeper}/10
+                        </span>
+                        <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-amber-500"
+                            style={{
+                              width: `${ratingDetails.wicketKeeper * 10}%`,
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
 
               {/* Display player type if available */}
               {ratingDetails.playerType && (
                 <div className="mt-3 text-sm text-gray-600">
                   <span className="font-medium">Player Type: </span>
-                  <span className="capitalize">{ratingDetails.playerType.replace('-', ' ')}</span>
+                  <span className="capitalize">
+                    {ratingDetails.playerType.replace("-", " ")}
+                  </span>
                 </div>
               )}
             </div>
@@ -646,7 +784,9 @@ const PlayerDetailsModal = ({
           {/* Selector Details */}
           {player.selector && (
             <div className="mb-6 bg-gray-50 rounded-xl p-4">
-              <h3 className="font-semibold text-gray-900 mb-3 text-lg">Assigned Selector</h3>
+              <h3 className="font-semibold text-gray-900 mb-3 text-lg">
+                Assigned Selector
+              </h3>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200">
                   {player.selector.logo ? (
@@ -656,14 +796,22 @@ const PlayerDetailsModal = ({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${getGradientByName(player.selector.name)} text-white`}>
+                    <div
+                      className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${getGradientByName(
+                        player.selector.name
+                      )} text-white`}
+                    >
                       {getInitials(player.selector.name)}
                     </div>
                   )}
                 </div>
                 <div>
-                  <h4 className="font-medium text-gray-900">{player.selector.name}</h4>
-                  <p className="text-sm text-gray-600">{player.selector.mobile}</p>
+                  <h4 className="font-medium text-gray-900">
+                    {player.selector.name}
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    {player.selector.mobile}
+                  </p>
                 </div>
               </div>
             </div>
@@ -672,22 +820,28 @@ const PlayerDetailsModal = ({
           {/* Session Details */}
           {session && (
             <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4">
-              <h3 className="font-semibold text-gray-900 mb-3 text-lg">Trial Session Details</h3>
+              <h3 className="font-semibold text-gray-900 mb-3 text-lg">
+                Trial Session Details
+              </h3>
 
               <div className="space-y-3">
                 {/* Session Info */}
                 <div className="bg-white rounded-lg p-3 shadow-sm">
                   <div className="flex items-center gap-2 text-gray-700 mb-2">
                     <Calendar className="w-4 h-4 text-blue-600" />
-                    <span className="font-medium">{session.sessionName}</span>
+                    <span className="font-medium">{session.name}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
                     <span>Slot:</span>
-                    <span className="font-medium">{session.slotName}</span>
+                    <span className="font-medium">
+                      {session.slot?.slotName}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <span>Type:</span>
-                    <span className="font-medium capitalize">{session.slotType}</span>
+                    <span className="font-medium capitalize">
+                      {session?.slot?.slotType}
+                    </span>
                   </div>
                 </div>
 
@@ -701,18 +855,22 @@ const PlayerDetailsModal = ({
                     <div className="flex justify-between">
                       <span>Date:</span>
                       <span className="font-medium">
-                        {new Date(session.slotDate).toLocaleDateString('en-IN', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
+                        {new Date(session.slotDate).toLocaleDateString(
+                          "en-IN",
+                          {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Time:</span>
                       <span className="font-medium">
-                        {formatTime(session.slotStartTime)} - {formatTime(session.slotEndTime)}
+                        {formatTime(session.slotStartTime)} -{" "}
+                        {formatTime(session.slotEndTime)}
                       </span>
                     </div>
                   </div>
@@ -725,10 +883,24 @@ const PlayerDetailsModal = ({
                     <span className="font-medium">Venue</span>
                   </div>
                   <div className="text-sm text-gray-600 space-y-1">
-                    <div>{session.location.venue}</div>
-                  { session.location.address && <div>{session.location.address}</div>}
-                   {(session.location.city || session.location.state) && <div>{session.location.city}, {session.location.state}</div>}
-                    {(session.location.country || session.location.pincode) && <div>{session.location.country} - {session.location.pincode}</div>}
+                    <div>{session?.slot?.location?.venue}</div>
+                    {session?.slot?.location?.address && (
+                      <div>{session.slot.location.address}</div>
+                    )}
+                    {(session?.slot?.location?.city ||
+                      session?.slot?.location?.state) && (
+                      <div>
+                        {session.slot.location.city},{" "}
+                        {session.slot.location.state}
+                      </div>
+                    )}
+                    {(session?.slot?.location?.country ||
+                      session?.slot?.location?.pincode) && (
+                      <div>
+                        {session.slot.location.country} -{" "}
+                        {session.slot.location.pincode}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -737,7 +909,6 @@ const PlayerDetailsModal = ({
 
           {/* Action Buttons */}
           <div className="flex flex-col gap-3 pt-4 border-t">
-
             {/* Locked message */}
             {session?.lockStatus === "locked" && (
               <div className="flex items-start gap-3 p-3 rounded-lg border border-red-300 bg-red-50">
@@ -757,15 +928,15 @@ const PlayerDetailsModal = ({
                 </svg>
 
                 <p className="text-sm text-red-700 leading-relaxed">
-                  This session is <strong>locked</strong>. You cannot update the score.
-                  Please contact the admin to unlock this session.
+                  This session is <strong>locked</strong>. You cannot update the
+                  score. Please contact the admin to unlock this session.
                 </p>
               </div>
             )}
 
             {/* Action Buttons */}
             <div className="flex gap-3">
-              {(ratingDetails && session?.lockStatus === "unlocked") ? (
+              {ratingDetails && session?.lockStatus === "unlocked" ? (
                 <button
                   type="button"
                   onClick={handleRemoveRating}
@@ -795,31 +966,28 @@ const PlayerDetailsModal = ({
               )}
             </div>
           </div>
-
         </div>
       </div>
     </div>
   );
 };
 
-const SelectorPlayerCard= ({
+const SelectorPlayerCard = ({
   player,
   onViewDetails,
   onRate,
   selector = true,
-  fetchSelectorPlayers
-
+  fetchSelectorPlayers,
+  ratingFields,
 }) => {
-
   const [imageError, setImageError] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  const initials = getInitials(player.name);
-  const role = formatRole(player.type);
-  const session = player.sessions?.[0];
+  const initials = getInitials(player.player.name);
+  const role = formatRole(player?.rating?.playerType);
+  const session = player.session;
   const rating = player.rating ? player.rating.avgRating : null;
-
 
   const handleViewDetails = (e) => {
     e?.stopPropagation();
@@ -829,13 +997,13 @@ const SelectorPlayerCard= ({
       try {
         onViewDetails(player);
       } catch (err) {
-        console.error('onViewDetails callback failed:', err);
+        console.error("onViewDetails callback failed:", err);
       }
     }
   };
 
   const getRoleColor = () => {
-    const roleLower = (player.playerRole || player.type)?.toLowerCase();
+    const roleLower = player?.rating?.playerType?.toLowerCase();
     if (roleLower === "batsman") {
       return "bg-blue-600 text-white";
     } else if (roleLower === "bowler") {
@@ -860,15 +1028,21 @@ const SelectorPlayerCard= ({
           onClick={handleViewDetails}
           className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer bg-gradient-to-br from-blue-500 to-blue-600"
         >
-          {!imageError && player.image && !isDummyImage(player.image) ? (
+          {!imageError &&
+          player.player.logo &&
+          !isDummyImage(player.player.logo) ? (
             <img
-              src={player.image}
-              alt={player.name}
+              src={player?.player?.logo}
+              alt={player?.player?.name}
               className="w-full h-full object-cover"
               onError={() => setImageError(true)}
             />
           ) : (
-            <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${getGradientByName(player.name)} text-white text-xl font-bold`}>
+            <div
+              className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${getGradientByName(
+                player?.player?.name
+              )} text-white text-xl font-bold`}
+            >
               {initials}
             </div>
           )}
@@ -899,32 +1073,35 @@ const SelectorPlayerCard= ({
           {/* NAME & BATCH */}
           <div className="flex justify-between items-start">
             <h3 className="font-semibold text-gray-900 text-sm">
-              {player.batchId}
+              {player?.player?.batchId}
             </h3>
           </div>
 
           {/* VENUE */}
-          {session?.location && (
+          {session?.slot?.location && (
             <div className="flex items-center gap-1 mt-1">
               <MapPin className="w-3 h-3 text-pink-500" />
               <span className="text-xs text-gray-700 truncate">
-                {session.slotName}
+                {session?.slot?.slotName}
               </span>
             </div>
           )}
-          {session?.sessionName && <div className="flex items-center gap-1 mt-1">
-            <CalendarCheck className="w-3 h-3 text-pink-500" />
-            <span className="text-xs text-gray-700 truncate">
-              Session -{session.sessionName}
-            </span>
-          </div>}
+          {session?.name && (
+            <div className="flex items-center gap-1 mt-1">
+              <CalendarCheck className="w-3 h-3 text-pink-500" />
+              <span className="text-xs text-gray-700 truncate">
+                Session -{session?.name}
+              </span>
+            </div>
+          )}
 
           {/* TIMING */}
           {session && (
             <div className="flex items-center gap-1 mt-1">
               <Clock className="w-3 h-3 text-green-600" />
               <span className="text-xs text-gray-600">
-                {formatTime(session.slotStartTime)} - {formatTime(session.slotEndTime)}
+                {formatTime(session.slotStartTime)} -{" "}
+                {formatTime(session.slotEndTime)}
               </span>
             </div>
           )}
@@ -954,6 +1131,7 @@ const SelectorPlayerCard= ({
         }}
         selector={selector}
         fetchSelectorPlayers={fetchSelectorPlayers}
+        ratingFields={ratingFields}
       />
     </>
   );

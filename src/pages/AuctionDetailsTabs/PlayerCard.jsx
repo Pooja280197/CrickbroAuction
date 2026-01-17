@@ -74,10 +74,10 @@ const PlayerDetailsModal = ({
   const playerMobile = playerData?.mobile || "";
   const playerLocation = playerData?.location || "";
   const playerBatchId = playerData?.batchId || "";
-  
+
   const initials = getInitials(playerName);
   const role = formatRole(type || playerData?.playerRole);
-  
+
   const rating = player?.playersRatings || {};
   const basePrice = player?.basePrice || 0;
   const currentBid = player?.currentBid || 0;
@@ -104,23 +104,29 @@ const PlayerDetailsModal = ({
                   alt={playerName}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.target.style.display = 'none';
+                    e.target.style.display = "none";
                     const parent = e.target.parentElement;
                     if (parent) {
-                      const initialsDiv = document.createElement('div');
-                      initialsDiv.className = `w-full h-full flex items-center justify-center bg-gradient-to-br ${getGradientByName(playerName)} text-white font-bold`;
+                      const initialsDiv = document.createElement("div");
+                      initialsDiv.className = `w-full h-full flex items-center justify-center bg-gradient-to-br ${getGradientByName(
+                        playerName
+                      )} text-white font-bold`;
                       initialsDiv.textContent = initials;
                       parent.appendChild(initialsDiv);
                     }
                   }}
                 />
               ) : (
-                <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${getGradientByName(playerName)} text-white font-bold`}>
+                <div
+                  className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${getGradientByName(
+                    playerName
+                  )} text-white font-bold`}
+                >
                   {initials}
                 </div>
               )}
             </div>
-            
+
             <div>
               <h2 className="text-xl font-bold text-gray-900">{playerName}</h2>
               {role && (
@@ -133,7 +139,9 @@ const PlayerDetailsModal = ({
 
           {/* Personal Details */}
           <div className="space-y-3 mb-6">
-            <h3 className="font-semibold text-gray-900 mb-2">Personal Details</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">
+              Personal Details
+            </h3>
             {playerEmail && (
               <div className="text-sm">
                 <span className="text-gray-600">Email: </span>
@@ -143,19 +151,25 @@ const PlayerDetailsModal = ({
             {playerMobile && (
               <div className="text-sm">
                 <span className="text-gray-600">Mobile: </span>
-                <span className="font-medium text-gray-900">{playerMobile}</span>
+                <span className="font-medium text-gray-900">
+                  {playerMobile}
+                </span>
               </div>
             )}
             {playerBatchId && (
               <div className="text-sm">
                 <span className="text-gray-600">Batch ID: </span>
-                <span className="font-medium text-gray-900">{playerBatchId}</span>
+                <span className="font-medium text-gray-900">
+                  {playerBatchId}
+                </span>
               </div>
             )}
             {playerLocation && (
               <div className="text-sm">
                 <span className="text-gray-600">Location: </span>
-                <span className="font-medium text-gray-900">{playerLocation}</span>
+                <span className="font-medium text-gray-900">
+                  {playerLocation}
+                </span>
               </div>
             )}
           </div>
@@ -163,18 +177,24 @@ const PlayerDetailsModal = ({
           {/* Auction Details */}
           {(basePrice > 0 || currentBid > 0) && (
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
-              <h3 className="font-semibold text-gray-900 mb-3">Auction Details</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">
+                Auction Details
+              </h3>
               <div className="grid grid-cols-2 gap-3">
                 {basePrice > 0 && (
                   <div className="text-sm">
                     <div className="text-gray-600">Base Price</div>
-                    <div className="font-semibold text-gray-900">₹{basePrice.toLocaleString()}</div>
+                    <div className="font-semibold text-gray-900">
+                      ₹{basePrice.toLocaleString()}
+                    </div>
                   </div>
                 )}
                 {currentBid > 0 && (
                   <div className="text-sm">
                     <div className="text-gray-600">Current Bid</div>
-                    <div className="font-semibold text-gray-900">₹{currentBid.toLocaleString()}</div>
+                    <div className="font-semibold text-gray-900">
+                      ₹{currentBid.toLocaleString()}
+                    </div>
                   </div>
                 )}
                 {status && (
@@ -190,7 +210,9 @@ const PlayerDetailsModal = ({
           {/* Rating Details */}
           {rating?.avgRating > 0 && (
             <div className="bg-yellow-50 rounded-lg p-4 mb-6">
-              <h3 className="font-semibold text-gray-900 mb-3">Rating Details</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">
+                Rating Details
+              </h3>
               <div className="mb-4">
                 <div className="text-sm text-gray-600">Average Rating</div>
                 <div className="text-2xl font-bold text-yellow-700">
@@ -200,13 +222,15 @@ const PlayerDetailsModal = ({
               {rating.playerType && (
                 <div className="text-sm">
                   <span className="text-gray-600">Player Type: </span>
-                  <span className="font-medium text-gray-900">{rating.playerType}</span>
+                  <span className="font-medium text-gray-900">
+                    {rating.playerType}
+                  </span>
                 </div>
               )}
             </div>
           )}
         </div>
-        
+
         {adminLogin && onRemove && (
           <div className="sticky bottom-0 left-0 right-0 bg-white p-4 border-t z-50">
             <button
@@ -240,14 +264,14 @@ const PlayerCard = ({
   const [imageError, setImageError] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  
+
   // Extract player data from the structure
   const playerData = player?.player || player;
   const playerId = player?.player?._id || player?.playerId || player?.id;
   const playerName = playerData?.name || "";
   const playerImage = playerData?.logo || "";
   const playerBatchId = playerData?.batchId || "";
-  
+
   const initials = getInitials(playerName);
   const role = formatRole(type || playerData?.playerRole);
 
@@ -317,7 +341,7 @@ const PlayerCard = ({
           </div>
 
           <div className="text-center w-full px-1">
-            <p className="text-xs font-semibold text-gray-900 truncate">
+            <p className="text-xs font-semibold text-white truncate">
               {playerName}
             </p>
             {playerBatchId && (
@@ -409,7 +433,8 @@ const PlayerCard = ({
               <div className="flex items-center gap-1 mt-1">
                 <Clock className="w-3 h-3 text-green-600" />
                 <span className="text-xs text-gray-600">
-                  {formatTime(assign.slotStartTime)}-{formatTime(assign.slotEndTime)}
+                  {formatTime(assign.slotStartTime)}-
+                  {formatTime(assign.slotEndTime)}
                 </span>
               </div>
             )}
@@ -485,13 +510,11 @@ const PlayerCard = ({
           )}
         </div>
 
-        <p className="text-xs font-semibold text-gray-900 text-center truncate w-full px-1">
+        <p className="text-xs font-semibold text-white text-center truncate w-full px-1">
           {playerName}
         </p>
         {playerBatchId && (
-          <p className="text-xs text-gray-500 truncate mt-1">
-            {playerBatchId}
-          </p>
+          <p className="text-xs text-gray-500 truncate mt-1">{playerBatchId}</p>
         )}
 
         {showActions && (

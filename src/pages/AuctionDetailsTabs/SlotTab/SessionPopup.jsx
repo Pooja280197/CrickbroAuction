@@ -32,22 +32,32 @@ const SessionPopup = ({
     let valid = true;
     const newErrors = {};
 
-    const today = new Date().toISOString().split("T")[0];
-    if (sessionData.slotDate < today) {
-      newErrors.date = "Session date cannot be in the past";
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (!sessionData.slotDate) {
+      newErrors.slotDate = "Date is required";
+      valid = false;
+    } else {
+      const selectedDate = new Date(sessionData.slotDate);
+      selectedDate.setHours(0, 0, 0, 0);
+    }
+
+    if (!sessionData.name?.trim()) {
+      newErrors.name = "Name is required";
       valid = false;
     }
 
-    if (sessionData.slotStartTime && sessionData.slotEndTime) {
-      if (sessionData.slotStartTime >= sessionData.slotEndTime) {
-        newErrors.time = "Start time must be earlier than end time";
-        valid = false;
-      }
+    if (
+      sessionData.slotStartTime &&
+      sessionData.slotEndTime &&
+      sessionData.slotStartTime >= sessionData.slotEndTime
+    ) {
+      newErrors.time = "Start time must be earlier than end time";
+      valid = false;
     }
-    if (!sessionData.name?.trim()) newErrors.name = "Name is required";
-    if (!sessionData.slotDate) newErrors.slotDate = "Date is required";
+
     setErrors(newErrors);
-    // return Object.keys(newErrors).length === 0;
     return valid;
   };
 
@@ -60,8 +70,6 @@ const SessionPopup = ({
     if (!validate()) return;
     onSave();
   };
-
-
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
@@ -143,7 +151,7 @@ const SessionPopup = ({
               <label className="block mb-1 font-medium">Session Status</label>
               <select
                 value={sessionData.status}
-                name="status"  
+                name="status"
                 onChange={handleChange}
                 className="w-full p-3 rounded-lg bg-gray-900/50 border border-gray-700 focus:border-cyan-500 focus:ring-cyan-500 outline-none"
               >
@@ -158,7 +166,7 @@ const SessionPopup = ({
               <label className="block mb-1 font-medium">Session Access</label>
               <select
                 value={sessionData.lockStatus}
-                  name="lockStatus" 
+                name="lockStatus"
                 onChange={handleChange}
                 className="w-full p-3 rounded-lg bg-gray-900/50 border border-gray-700 focus:border-cyan-500 focus:ring-cyan-500 outline-none"
               >

@@ -2,12 +2,14 @@ import React, { useEffect, useState } from "react";
 import { useDebounce } from "../../../components/useDebounce";
 import { Search } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { getSelectorPlayers } from "../../../redux/actions";
+import { fetchAuctionDetails, getSelectorPlayers } from "../../../redux/actions";
+import SelectorPlayerCard from "./SelectorPlayerCard";
 
 function AssignedPlayersToSelector({ auctionId }) {
   const dispatch = useDispatch();
   const [searchAssignedPlayer, setSearchAssignedPlayer] = useState("");
   const debouncedAssignPlayer = useDebounce(searchAssignedPlayer, 200);
+  const [selectedPlayerForModal, setSelectedPlayerForModal] = useState(null);
 
   const isLoading = useSelector(
     (state) => state.loading?.selectorPlayers || false
@@ -17,7 +19,14 @@ function AssignedPlayersToSelector({ auctionId }) {
     (state) => state.data?.selectorPlayers || null
   );
 
-  const selectorPlayers = playersData?.data;
+  const selectorPlayers = useSelector(
+    (state) => state.data?.selectorPlayers?.data || []
+  );
+
+  
+  const ratingFields = useSelector(
+    (state) => state.data?.auctionDetails?.ratingField || []
+  );
   const selectorPlayersPage = playersData?.page;
   const selectorPlayersTotalPages = playersData?.pages;
   const selectorPlayersTotal = playersData?.total;
@@ -33,6 +42,7 @@ function AssignedPlayersToSelector({ auctionId }) {
 
   useEffect(() => {
     fetchSelectorPlayers();
+    dispatch(fetchAuctionDetails(auctionId))
   }, [auctionId]);
 
   useEffect(() => {
@@ -44,6 +54,10 @@ function AssignedPlayersToSelector({ auctionId }) {
     fetchSelectorPlayers(); // 🔥 YEH LINE RATING KE BAAD UI UPDATE KAR DEGI
   };
 
+  const handleViewPlayerDetails = (player) => {
+    setSelectedPlayerForModal(player);
+  };
+  console.log(ratingFields,"rating")
 
   return (
     <>
@@ -55,28 +69,27 @@ function AssignedPlayersToSelector({ auctionId }) {
             placeholder="Search Player"
             value={searchAssignedPlayer}
             onChange={(e) => setSearchAssignedPlayer(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+            className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-black text-white"
           />
         </div>
 
-        {selectorPlayers.length === 0 ? (
+        {selectorPlayers?.length === 0 ? (
           <div className="text-center text-gray-500 py-6 text-sm">
             No players found.
           </div>
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {selectorPlayers.map((item) => (
-                <></>
-
-                // <SelectorPlayerCard
-                //     key={item._id}
-                //     player={item}
-                //     selector={isSelector}
-                //     onViewDetails={handleViewPlayerDetails}
-                //     onRate={handleRatePlayer}
-                //     fetchSelectorPlayers={fetchSelectorPlayers}
-                // />
+              {selectorPlayers?.map((item) => (
+                <SelectorPlayerCard
+                    key={item._id}
+                    player={item}
+                    // selector={isSelector}
+                    onViewDetails={handleViewPlayerDetails}
+                    onRate={handleRatePlayer}
+                    fetchSelectorPlayers={fetchSelectorPlayers}
+                    ratingFields={ratingFields}
+                />
               ))}
             </div>
 

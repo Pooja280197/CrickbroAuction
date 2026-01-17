@@ -129,7 +129,6 @@
 
 //   if (!isOpen) return null;
 
-  
 //   const formatDate = (isoDate) => {
 //     const d = new Date(isoDate);
 //     const day = String(d.getDate()).padStart(2, "0");
@@ -144,7 +143,6 @@
 //     const h12 = h % 12 === 0 ? 12 : h % 12;
 //     return `${h12}:${minute} ${ampm}`;
 //   };
-
 
 //   return (
 //     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fadeIn">
@@ -273,74 +271,69 @@
 
 // export default PlayerAssign;
 
-
-
-import React, { useState, useEffect } from 'react';
-import { X, MapPin, Clock } from 'lucide-react';
-import axios from 'axios';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect } from "react";
+import { X, MapPin, Clock, AlertCircle } from "lucide-react";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { useDispatch, useSelector } from "react-redux";
+import { AssignPlayersToTrails, fetchSlotList, fetchSlotSessions } from "../../redux/actions";
 
 const PlayerAssign = ({
   isOpen,
   onClose,
   selectedPlayers,
   playerCount,
-  onAssignSuccess
+  onAssignSuccess,
+  auctionId,
 }) => {
-  const [auctionSlots, setAuctionSlots] = useState([]);
-  const [sessions, setSessions] = useState([]);
-  const [selectedSlot, setSelectedSlot] = useState('');
-  const [selectedSession, setSelectedSession] = useState('');
+  const [selectedSlot, setSelectedSlot] = useState("");
+  const [selectedSession, setSelectedSession] = useState("");
   const [loading, setLoading] = useState(false);
-  const [slotLoading, setSlotLoading] = useState(false);
-  const [sessionLoading, setSessionLoading] = useState(false);
+
+  const dispatch = useDispatch();
+
+  const slotLoading = useSelector((state) => state?.loading?.slotList);
+  const sessionLoading = useSelector((state) => state?.loading?.sessions);
+  const slotsdata = useSelector((state) => state?.data?.slotList);
+  const sessionsdata = useSelector((state) => state?.data?.sessions);
+
+  const auctionSlots = slotsdata?.data;
+  const sessions = sessionsdata?.sessions;
 
   // Fetch auction slots on modal open
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && auctionId) {
       fetchAuctionSlots();
     }
-  }, [isOpen]);
+  }, [isOpen, auctionId]);
 
   // Fetch auction slots
   const fetchAuctionSlots = async () => {
-    setSlotLoading(true);
     try {
-      const res = await axios.get('/webSiteApi/auctionSlot/getListAuctionSlots');
-      setAuctionSlots(res?.data?.data?.data || []);
+      await dispatch(fetchSlotList(auctionId));
     } catch (error) {
       console.log("Error fetching auction slots:", error);
-      toast.error("Failed to fetch locations");
-    } finally {
-      setSlotLoading(false);
+      toast.error("Failed to fetch auction slots");
     }
   };
 
   // Fetch sessions when slot is selected
   const fetchSessions = async (slotId) => {
-    setSessionLoading(true);
-    setSelectedSession('');
+    setSelectedSession("");
     try {
-      const res = await axios.get(
-        `/webSiteApi/auctionSlot/getAuctionSlot/${slotId}`
-      );
-      setSessions(res?.data?.data?.sessions || []);
+      await dispatch(fetchSlotSessions(slotId));
     } catch (error) {
       console.log("Error fetching sessions:", error);
       toast.error("Failed to fetch shift times");
-      setSessions([]);
-    } finally {
-      setSessionLoading(false);
+      // setSessions([]);
     }
   };
 
   const handleSlotChange = (slotId) => {
     setSelectedSlot(slotId);
-    setSelectedSession('');
+    setSelectedSession("");
     if (slotId) {
       fetchSessions(slotId);
-    } else {
-      setSessions([]);
     }
   };
 
@@ -352,15 +345,15 @@ const PlayerAssign = ({
 
     setLoading(true);
     try {
-      await axios.post(
-        `/webSiteApi/auctionSlot/addPlayerToSession/${selectedSlot}/${selectedSession}`,
-        {
-          playerIds: selectedPlayers
-        }
-      );
-
+      const payload={
+      "auctionId":auctionId,
+      "playerIds":selectedPlayers
+      }
+      await dispatch(AssignPlayersToTrails(selectedSlot, selectedSession,payload))
       toast.success(
-        `Successfully assigned ${playerCount} player${playerCount > 1 ? 's' : ''} to trial`
+        `Successfully assigned ${playerCount} player${
+          playerCount > 1 ? "s" : ""
+        } to trial`
       );
       onAssignSuccess();
       onClose();
@@ -374,9 +367,9 @@ const PlayerAssign = ({
   };
 
   const resetForm = () => {
-    setSelectedSlot('');
-    setSelectedSession('');
-    setSessions([]);
+    setSelectedSlot("");
+    setSelectedSession("");
+    // setSessions([]);
   };
 
   const handleClose = () => {
@@ -402,20 +395,21 @@ const PlayerAssign = ({
     return `${h12}:${minute} ${ampm}`;
   };
 
+  console.log(sessionsdata, "ssessions");
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full">
-
+      <div className="relative rounded-2xl shadow-2xl max-w-md w-full bg-gray-900/90 text-white">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900">
+          <h2 className="text-xl font-bold text-white">
             Assign Players to Trial
           </h2>
           <button
             onClick={handleClose}
             className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-white" />
           </button>
         </div>
 
@@ -423,7 +417,8 @@ const PlayerAssign = ({
         <div className="p-6 space-y-6">
           <div className="bg-blue-50 rounded-lg p-4">
             <p className="text-sm font-semibold text-blue-900">
-              Assigning {playerCount} player{playerCount > 1 ? 's' : ''} to trial
+              Assigning {playerCount} player{playerCount > 1 ? "s" : ""} to
+              trial
             </p>
           </div>
 
@@ -438,18 +433,44 @@ const PlayerAssign = ({
               value={selectedSlot}
               onChange={(e) => handleSlotChange(e.target.value)}
               disabled={slotLoading}
-              className="w-full p-3 border rounded-lg"
+              className="w-full p-3 border rounded-lg bg-gray-800/50"
             >
               <option value="" disabled hidden>
-                Select location...
+                {slotLoading ? "Loading locations..." : "Select location..."}
               </option>
 
-              {auctionSlots.map((slot) => (
-                <option key={slot._id} value={slot._id}>
-                  {slot.slotName}
+              {!slotLoading && auctionSlots && auctionSlots.length === 0 && (
+                <option value="" disabled>
+                  No trial locations available
                 </option>
-              ))}
+              )}
+
+              {!slotLoading && auctionSlots && auctionSlots.length > 0 && (
+                <>
+                  {auctionSlots.map((slot) => (
+                    <option key={slot._id} value={slot._id}>
+                      {slot.slotName}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
+
+            {/* Display messages based on state */}
+            {slotLoading && (
+              <p className="text-sm text-gray-400 animate-pulse">
+                Loading locations...
+              </p>
+            )}
+
+            {!slotLoading && auctionSlots && auctionSlots.length === 0 && (
+              <div className="flex items-center gap-2 p-3 bg-red-900/20 border border-red-800/30 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-red-400" />
+                <p className="text-sm text-red-300">
+                  No trial locations available for this auction
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Sessions */}
@@ -463,20 +484,66 @@ const PlayerAssign = ({
               value={selectedSession}
               onChange={(e) => setSelectedSession(e.target.value)}
               disabled={!selectedSlot || sessionLoading}
-              className="w-full p-3 border rounded-lg"
+              className="w-full p-3 border rounded-lg bg-gray-800/50"
             >
               <option value="" disabled hidden>
-                {selectedSlot ? "Select shift time..." : "Select location first"}
+                {!selectedSlot
+                  ? "Select location first"
+                  : sessionLoading
+                  ? "Loading shift times..."
+                  : sessions && sessions.length > 0
+                  ? "Select shift time..."
+                  : "No sessions available"}
               </option>
 
-              {sessions.map((session) => (
-                <option key={session._id} value={session._id}>
-                  {session.name} - {formatDate(session.slotDate)} (
-                  {formatTime(session.slotStartTime)} -{" "}
-                  {formatTime(session.slotEndTime)})
-                </option>
-              ))}
+              {/* {selectedSlot &&
+                !sessionLoading &&
+                sessions &&
+                sessions.length === 0 && (
+                  <option value="" disabled>
+                    No sessions available for this location
+                  </option>
+                )} */}
+
+              {selectedSlot &&
+                !sessionLoading &&
+                sessions &&
+                sessions.length > 0 && (
+                  <>
+                    {sessions.map((session) => (
+                      <option key={session._id} value={session._id}>
+                        {session.name} - {formatDate(session.slotDate)} (
+                        {formatTime(session.slotStartTime)} -{" "}
+                        {formatTime(session.slotEndTime)})
+                      </option>
+                    ))}
+                  </>
+                )}
             </select>
+            {/* Display messages based on state */}
+            {!selectedSlot && (
+              <p className="text-sm text-gray-400">
+                Please select a location first
+              </p>
+            )}
+
+            {sessionLoading && selectedSlot && (
+              <p className="text-sm text-gray-400 animate-pulse">
+                Loading shift times...
+              </p>
+            )}
+
+            {selectedSlot &&
+              !sessionLoading &&
+              sessions &&
+              sessions.length === 0 && (
+                <div className="flex items-center gap-2 p-3 bg-yellow-900/20 border border-yellow-800/30 rounded-lg ">
+                  <AlertCircle className="w-4 h-4 text-yellow-400" />
+                  <p className="text-sm text-yellow-300">
+                    No shift times available for this location
+                  </p>
+                </div>
+              )}
           </div>
         </div>
 
@@ -492,11 +559,21 @@ const PlayerAssign = ({
 
           <button
             onClick={handleAssign}
-            disabled={!selectedSlot || !selectedSession || loading}
-            className={`flex-1 px-4 py-2 rounded-lg text-white ${
-              loading
-                ? "bg-gray-400"
-                : "bg-blue-600 hover:bg-blue-700"
+            disabled={
+              !selectedSlot ||
+              !selectedSession ||
+              loading ||
+              (auctionSlots && auctionSlots.length === 0) ||
+              (selectedSlot && sessions && sessions.length === 0)
+            }
+            className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-colors ${
+              !selectedSlot ||
+              !selectedSession ||
+              loading ||
+              (auctionSlots && auctionSlots.length === 0) ||
+              (selectedSlot && sessions && sessions.length === 0)
+                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
             }`}
           >
             {loading ? "Assigning..." : "Assign to Trial"}

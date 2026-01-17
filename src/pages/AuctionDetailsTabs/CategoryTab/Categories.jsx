@@ -9,6 +9,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import DeleteConfirmModal from "../../../components/DeleteConfirmModal";
+import CategoryPlayers from "./CategoryPlayers";
 
 const Categories = ({ auctionId }) => {
   const [categoryPopup, setCategoryPopup] = useState(false);
@@ -17,6 +18,8 @@ const Categories = ({ auctionId }) => {
   const [editId, setEditId] = useState("");
   const [deletePopup, setDeletePopup] = useState(false);
   const [deleteId, setDeleteId] = useState("");
+  const [categoryId,setCategoryId]=useState("")
+  const [playersPopup,setPlayersPopup]=useState(false)
   const categoryLoading = useSelector((state) => state?.loading?.categories);
   const categoryDetails = useSelector((state) => state?.data?.categories);
   const categories = categoryDetails?.data;
@@ -154,6 +157,15 @@ const Categories = ({ auctionId }) => {
                         >
                           Delete
                         </button>
+                         <button
+                          onClick={() => {
+                            setPlayersPopup(true);
+                            setCategoryId(category._id);
+                          }}
+                          className="px-3 py-1 text-xs bg-green-500/20 text-white-400 rounded hover:bg-green-500/30"
+                        >
+                          View Players
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -179,6 +191,13 @@ const Categories = ({ auctionId }) => {
         description="Do you want to delete this category ?"
         onClose={() => setDeletePopup(false)}
         onConfirm={handleDeleteCategory}
+      />
+       <CategoryPlayers
+        open={playersPopup}
+        onClose={()=> setPlayersPopup(false)}
+        // onConfirm={handleDeleteCategory}
+        categoryId={categoryId}
+        auctionId={auctionId}
       />
     </div>
   );

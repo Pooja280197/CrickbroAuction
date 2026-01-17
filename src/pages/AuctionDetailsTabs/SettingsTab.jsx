@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import * as XLSX from "xlsx";
 import {
   addAuctionAdmin,
   addAuctionSelector,
+  addNewField,
   addTeamOwner,
   addTeamToAuction,
   fetchAllAdmin,
@@ -27,11 +29,10 @@ import Rating from "./Rating";
 const tabs = [
   { key: "addAdmin", label: "Add Admin" },
   { key: "addSelectors", label: "Add Selectors" },
-  { key: "manageTeam", label: "Manage Team" },
   { key: "addOwner", label: "Add Team Owner" },
   { key: "rules", label: "Edit Auction Rules" },
   { key: "rating", label: "Set Player Rating" },
-  { key: "auctionScreen", label: "Auction Screen" },
+  { key: "addFields", label: "Add New Field" },
 ];
 
 const Settings = ({ auctionId }) => {
@@ -40,10 +41,10 @@ const Settings = ({ auctionId }) => {
   const [name, setName] = useState("");
   const [sendAdminId, setSendAdminId] = useState(null);
   const [searchAuctionTeam, setSearchAuctionTeam] = useState("");
-  const [selectedTeamToAuction, setSelectedTeamToAuction] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState([]);
   const [selectedTeamId, setSelectedTeamId] = useState();
-  const [showRulesPopup, setShowRulesPopup] = useState(false);
+  const [fields, setFields] = useState([]);
+  const [addName, setAddName] = useState("");
 
   const dispatch = useDispatch();
 
@@ -72,6 +73,7 @@ const Settings = ({ auctionId }) => {
   const adminList = adminData?.admins || [];
   const selectorList = selectorsData?.selectors || [];
   const ownerList = teamOwnersData?.data || [];
+  const ratingFields = auction?.ratingField || [];
 
   useEffect(() => {
     if (activeTab === "addSelectors" || activeTab === "addAdmin") {
@@ -79,6 +81,18 @@ const Settings = ({ auctionId }) => {
       setContact("");
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (ratingFields.length) {
+      setFields(
+        ratingFields.map((field) => ({
+          id: field._id, // keep backend id
+          label: field.label,
+          type: field.type,
+        }))
+      );
+    }
+  }, [ratingFields]);
 
   useEffect(() => {
     if (!auctionId) return;
@@ -110,8 +124,6 @@ const Settings = ({ auctionId }) => {
     }
   }, [tournamentTeam]);
 
-
-
   const handleContactChange = async (e) => {
     const value = e.target.value.replace(/\D/g, "");
     if (value.length <= 10) {
@@ -129,11 +141,14 @@ const Settings = ({ auctionId }) => {
         console.error(err);
       }
     } else {
+      setSendAdminId("");
       setName("");
+      setAddName(true);
     }
   };
 
   const handleAddAdmin = async () => {
+    const payload=sendAdminId?sendAdminId:{mobile:contact,name:name}
     if (contact.length !== 10) {
       toast.error("Enter valid 10 digit mobile number");
       return;
@@ -142,8 +157,10 @@ const Settings = ({ auctionId }) => {
       toast.error("Admin name is Required");
       return;
     }
+
     try {
-      const res = await dispatch(addAuctionAdmin(auctionId, sendAdminId));
+     
+      const res = await dispatch(addAuctionAdmin(auctionId, payload));
 
       if (res?.data) {
         toast.success("Admin Added!");
@@ -170,6 +187,7 @@ const Settings = ({ auctionId }) => {
   };
 
   const handleAddSelector = async () => {
+    const payload=sendAdminId?sendAdminId:{mobile:contact,name:name}
     if (contact.length !== 10) {
       toast.error("Enter valid 10 digit mobile number");
       return;
@@ -179,7 +197,7 @@ const Settings = ({ auctionId }) => {
       return;
     }
     try {
-      const res = await dispatch(addAuctionSelector(auctionId, sendAdminId));
+      const res = await dispatch(addAuctionSelector(auctionId, payload));
       if (res?.data) {
         toast.success("Selector Added!");
         dispatch(fetchAllSelectors(auctionId));
@@ -205,6 +223,7 @@ const Settings = ({ auctionId }) => {
   };
 
   const handleAddTeamOwner = async () => {
+    const payload=sendAdminId?sendAdminId:{mobile:contact,name:name,teamId: selectedTeamId}
     if (!selectedTeamId) {
       toast.error("Please select a team");
       return;
@@ -218,7 +237,7 @@ const Settings = ({ auctionId }) => {
       return;
     }
     try {
-      await dispatch(addTeamOwner(auctionId, selectedTeamId, sendAdminId));
+      await dispatch(addTeamOwner(auctionId, selectedTeamId, payload));
       toast.success("Team Owner Added!");
       setSelectedTeamId(null);
       setSendAdminId(null);
@@ -252,6 +271,49 @@ const Settings = ({ auctionId }) => {
       })
     : [];
 
+  const handleAddField = () => {
+    setFields((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        label: "",
+        type: "string",
+      },
+    ]);
+  };
+
+  const handleChange = (id, key, value) => {
+    setFields((prev) =>
+      prev.map((field) =>
+        field.id === id ? { ...field, [key]: value } : field
+      )
+    );
+  };
+
+  const handleDelete = (id) => {
+    setFields((prev) => prev.filter((field) => field.id !== id));
+  };
+
+  const handleUpdate = async () => {
+    try {
+      const payload = {
+        ratingFields: fields.map(({ label, type }) => ({
+          label,
+          type,
+        })),
+      };
+
+      await dispatch(addNewField(auctionId, payload));
+      dispatch(fetchAuctionDetails(auctionId));
+
+      toast.success("Fields updated successfully");
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  console.log(ratingFields, "rating");
+
   const renderContent = () => {
     if (activeTab === "addAdmin" && isAdminLoading) {
       return <Loader text="Loading admins..." />;
@@ -264,14 +326,11 @@ const Settings = ({ auctionId }) => {
     if (activeTab === "addOwner" && isTeamOwnersLoading) {
       return <Loader text="Loading Team Owners..." />;
     }
-    if (activeTab === "manageTeam" && isTeamsLoading) {
-      return <Loader text="Loading Teams..." />;
-    }
 
     switch (activeTab) {
       case "addAdmin":
         return (
-          <div className="min-h-screen bg-hero-gradient flex justify-center px-2 py-3">
+          <div className="min-h-screen bg-black/50 flex justify-center px-2 py-3">
             <div className="w-full card-glass relative">
               {/* HEADER */}
               <div className="py-3 text-center border-b border-white/10">
@@ -301,8 +360,11 @@ const Settings = ({ auctionId }) => {
                   <input
                     type="text"
                     value={name}
-                    disabled
-                    placeholder="Auto fetched name"
+                    disabled={!addName}
+                    placeholder={addName ? "Type Name" : "Auto fetched name"}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                    }}
                     className="w-full bg-transparent outline-none text-sm text-white placeholder-white/40 disabled:opacity-60"
                   />
                 </div>
@@ -351,7 +413,7 @@ const Settings = ({ auctionId }) => {
         );
       case "addSelectors":
         return (
-          <div className="min-h-screen bg-hero-gradient flex justify-center px-2 py-3">
+          <div className="min-h-screen bg-black/50 flex justify-center px-2 py-3">
             <div className="w-full  card-glass relative">
               {/* HEADER */}
               <div className="py-3 text-center border-b border-white/10">
@@ -381,8 +443,11 @@ const Settings = ({ auctionId }) => {
                   <input
                     type="text"
                     value={name}
-                    disabled
-                    placeholder="Auto fetched name"
+                    disabled={!addName}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                    }}
+                    placeholder={addName ? "Type Name" : "Auto fetched name"}
                     className="w-full bg-transparent outline-none text-sm text-white placeholder-white/40 disabled:opacity-60"
                   />
                 </div>
@@ -430,107 +495,9 @@ const Settings = ({ auctionId }) => {
           </div>
         );
 
-      case "manageTeam":
-        return (
-          <div className=" bg-black/50 flex justify-center items-center px-2">
-            {/* MODAL */}
-            <div className="w-full max-w-7xl h-[90vh] card-glass flex flex-col animate-slideDown">
-              {/* HEADER */}
-              <div className="sticky top-0 z-20 px-5 py-3 border-b border-white/10 bg-primary-darker/80 backdrop-blur">
-                <div className="flex flex-col gap-3">
-                  {/* TITLE ROW */}
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-oswald tracking-wide text-crickbroYellow flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-accent-gradient"></span>
-                      All Teams
-                    </h2>
-                  </div>
-
-                  {/* SEARCH + ACTIONS */}
-                  <div className="flex flex-wrap gap-2 items-center font-inter">
-                    {/* Search */}
-                    <input
-                      type="text"
-                      placeholder="Search team..."
-                      value={searchAuctionTeam}
-                      onChange={(e) => setSearchAuctionTeam(e.target.value)}
-                      className="flex-1 min-w-[180px] px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-white/40 focus:border-crickbroPurple outline-none"
-                    />
-
-                    {/* Select All */}
-                    <button
-                      onClick={() => {
-                        if (
-                          selectedTeam.length === filteredAuctionTeam.length
-                        ) {
-                          setSelectedTeam([]);
-                        } else {
-                          setSelectedTeam(
-                            filteredAuctionTeam.map((i) => i?.teamId?._id)
-                          );
-                        }
-                      }}
-                      className="px-3 py-2 rounded-lg text-xs border border-white/10 text-white/80 hover:bg-white/5 transition"
-                    >
-                      {selectedTeam.length === filteredAuctionTeam.length
-                        ? "Deselect All"
-                        : "Select All"}
-                    </button>
-
-                    {/* Add Button */}
-                    <button
-                      disabled={selectedTeam.length === 0}
-                      onClick={() => {
-                        dispatch(addTeamToAuction(auctionId, selectedTeam));
-                      }}
-                      className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${
-                        selectedTeam.length > 0
-                          ? "bg-accent-gradient text-primary-darker shadow-md"
-                          : "bg-white/10 text-white/40 cursor-not-allowed"
-                      }`}
-                    >
-                      Add ({selectedTeam.length})
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* GRID */}
-              <div className="flex-1 overflow-y-auto px-4 py-4">
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 gap-4 justify-items-center">
-                  {filteredAuctionTeam.map((item) => {
-                    const team = item.teamId;
-
-                    return (
-                      <TeamCard
-                        key={team._id}
-                        team={{
-                          id: team._id,
-                          name: team.name,
-                          type: team.playerRole,
-                          image: team.logo,
-                        }}
-                        isSelected={selectedTeam.includes(team._id)}
-                        onSelect={(id) =>
-                          setSelectedTeam((prev) =>
-                            prev.includes(id)
-                              ? prev.filter((x) => x !== id)
-                              : [...prev, id]
-                          )
-                        }
-                        showActions
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
       case "addOwner":
         return (
-          <div className="min-h-screen bg-hero-gradient flex justify-center px-2 py-3">
+          <div className="min-h-screen bg-black/50 flex justify-center px-2 py-3">
             <div className="w-full card-glass relative">
               {/* HEADER */}
               <div className="py-3 text-center border-b border-white/10">
@@ -546,11 +513,17 @@ const Settings = ({ auctionId }) => {
                   <select
                     value={selectedTeamId}
                     onChange={(e) => setSelectedTeamId(e.target.value)}
-                    className="w-full bg-transparent text-black outline-none text-sm cursor-pointer"
+                    className="w-full bg-transparent text-white outline-none text-sm cursor-pointer"
                   >
-                    <option value="">Select Team</option>
+                    <option value="" className="bg-black">
+                      Select Team
+                    </option>
                     {tournamentTeam?.map((item) => (
-                      <option key={item?.teamId?._id} value={item?.teamId?._id}>
+                      <option
+                        key={item?.teamId?._id}
+                        value={item?.teamId?._id}
+                        className="bg-black"
+                      >
                         {item?.teamId?.name}
                       </option>
                     ))}
@@ -576,8 +549,11 @@ const Settings = ({ auctionId }) => {
                   <input
                     type="text"
                     value={name}
-                    readOnly
-                    placeholder="Auto fetched name"
+                    disabled={!addName}
+                    placeholder={addName ? "Type Name" : "Auto fetched name"}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                    }}
                     className="w-full bg-transparent outline-none text-sm text-white placeholder-white/40"
                   />
                 </div>
@@ -586,7 +562,6 @@ const Settings = ({ auctionId }) => {
               {/* OWNER LIST */}
               <div className="px-4 max-h-[220px] overflow-y-auto font-inter">
                 {ownerList.map((owner) =>
-             
                   owner?.owners?.map((oname) => (
                     <div
                       key={oname._id}
@@ -646,24 +621,91 @@ const Settings = ({ auctionId }) => {
         );
 
       case "rating":
-        return <Rating
-         auctionId={auctionId}
-         details={{
-            trailTypeAuction: auction?.trailTypeAuction,
-            trailStart: auction?.trailStart,
-            trailEnd: auction?.trailEnd,
-            ratingToSelectPlayers: {
-              allrounder: auction?.ratingToSelectPlayers?.allrounder,
-              batsman: auction?.ratingToSelectPlayers?.batsman,
-              bowler: auction?.ratingToSelectPlayers?.bowler,
-              wicketkeeper:
-                auction?.ratingToSelectPlayers?.wicketkeeper,
-            },
-          }}
-           fetch={() => dispatch(fetchAuctionDetails(auctionId))}
-          />;
-      case "auctionScreen":
-        return <div>Auction Screen Content</div>;
+        return (
+          <Rating
+            auctionId={auctionId}
+            details={{
+              trailTypeAuction: auction?.trailTypeAuction,
+              trailStart: auction?.trailStart,
+              trailEnd: auction?.trailEnd,
+              ratingToSelectPlayers: {
+                allrounder: auction?.ratingToSelectPlayers?.allrounder,
+                batsman: auction?.ratingToSelectPlayers?.batsman,
+                bowler: auction?.ratingToSelectPlayers?.bowler,
+                wicketkeeper: auction?.ratingToSelectPlayers?.wicketkeeper,
+              },
+            }}
+            fetch={() => dispatch(fetchAuctionDetails(auctionId))}
+          />
+        );
+
+      case "addFields":
+        return (
+          <div className="p-4 border rounded-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className=" text-lg text-crickbroYellow">
+                Add Custom Fields
+              </h3>
+
+              <button
+                onClick={handleAddField}
+                className="px-3 py-1 bg-blue-600 text-white rounded"
+              >
+                + Add Field
+              </button>
+            </div>
+
+            {fields.length === 0 && (
+              <p className="text-gray-500">No fields added yet</p>
+            )}
+
+            {fields.map((field, index) => (
+              <div key={field.id} className="flex gap-3 mb-2 items-center">
+                <input
+                  type="text"
+                  value={field.label}
+                  placeholder="Label"
+                  onChange={(e) =>
+                    handleChange(field.id, "label", e.target.value)
+                  }
+                  className="border p-2 rounded w-1/2 bg-transparent"
+                />
+
+                <select
+                  value={field.type}
+                  onChange={(e) =>
+                    handleChange(field.id, "type", e.target.value)
+                  }
+                  className="border p-2 rounded bg-transparent"
+                >
+                  <option value="string" className="bg-black">
+                    String
+                  </option>
+                  <option value="number" className="bg-black">
+                    Number
+                  </option>
+                </select>
+
+                <button
+                  onClick={() => handleDelete(field.id)}
+                  className="text-red-600"
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+
+            {fields.length > 0 && (
+              <button
+                onClick={handleUpdate}
+                className="mt-4 px-4 py-2 bg-green-600 text-white rounded"
+              >
+                Update
+              </button>
+            )}
+          </div>
+        );
+
       default:
         return null;
     }

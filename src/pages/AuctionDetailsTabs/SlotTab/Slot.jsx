@@ -186,6 +186,7 @@ const Slot = ({ auctionId }) => {
     if (!slotId) return;
 
     try {
+      debugger
       if (isEditing) {
         await dispatch(editSession(slotId, editSessionId, data));
         toast.success("Session updated successfully");

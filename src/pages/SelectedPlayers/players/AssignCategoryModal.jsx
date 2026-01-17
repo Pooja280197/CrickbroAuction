@@ -225,6 +225,7 @@ export default function AssignCategoryModal({
   const assignPlayerToCategory = () => {
     axios
       .post(`/webSiteApi/auctionCategory/addPlayersToCategory/${cat}`, {
+        auctionId,
         playerIds: selectedIds,
       })
       .then(() => {

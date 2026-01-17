@@ -11,6 +11,7 @@ import { ToastContainer } from 'react-toastify'
 import CreateEditAuction from './pages/CreateEditAuction'
 import AdminAuctionControl from './pages/Live_Auction/admin/AdminAuctionControl'
 import BiddingPanel from '../src/pages/Live_Auction/TeamOwner/BiddingPanel'
+import AuctionDetailsForUser from '../src/pages/AuctionDetailsForUser'
 
 
 function AppContent() {
@@ -28,6 +29,7 @@ function AppContent() {
       <Route exact path="/createAuction" element={<CreateEditAuction/>}/>
       <Route exact path="/editAuction/:auctionId" element={<CreateEditAuction/>}/>
       <Route exact path="/team-bidding/:auctionId" element={<BiddingPanel/>}/>  
+      <Route exact path="/viewAuction/:auctionId" element={<AuctionDetailsForUser/>}/>  
     </Routes>
     </BrowserRouter>
   

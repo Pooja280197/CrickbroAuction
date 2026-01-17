@@ -353,11 +353,13 @@ export default function PlayerDetailsPopup({
   isOpen,
   onClose,
   player,
+  isTrialType
 }) {
   if (!isOpen || !player) return null;
+  console.log(player,"player")
 
-  const playerDoc = player?.playerDoc || {};
-  const rating = player?.bestAvgRating || 0;
+  const playerDoc = player?.player|| {};
+  const rating = player?.playersRatings?.avgRating || 0;
   const matchedSlots = player?.matchedSlots || [];
 
   // Check if image is dummy
@@ -436,11 +438,11 @@ export default function PlayerDetailsPopup({
               <p className="text-sm opacity-90 capitalize">
                 {player?.matchedSlots?.[0]?.rating?.playerType?.toUpperCase()}
               </p>
-              <div className="mt-2">
+            {isTrialType &&  <div className="mt-2">
                 <span className="bg-white/30 px-3 py-1 rounded-full text-sm font-semibold">
                   Rating: {rating.toFixed(2)} ⭐
                 </span>
-              </div>
+              </div>}
             </div>
           </div>
         </div>

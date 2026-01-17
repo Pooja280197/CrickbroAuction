@@ -14,9 +14,8 @@ import {
   FlaskConical,
   CalendarClock,
   Settings,
-  Layers
+  Layers,
 } from "lucide-react";
-
 
 // TAB CONTENT COMPONENTS
 import TournamentDetails from "./AuctionDetailsTabs/TournamentDetails";
@@ -27,11 +26,7 @@ import AuctionMatches from "./AuctionDetailsTabs/AuctionMatches";
 import SettingsTab from "./AuctionDetailsTabs/SettingsTab";
 import Slot from "../pages/AuctionDetailsTabs/SlotTab/Slot";
 import Categories from "./AuctionDetailsTabs/CategoryTab/Categories";
-import {
-  EnrollPlayer,
-  fetchAuctionDetails,
-  fetchUserRole,
-} from "../redux/actions";
+import { EnrollPlayer, fetchAuctionDetails, fetchUserRole } from "../redux/actions";
 import { useDispatch, useSelector } from "react-redux";
 import TrialSlot from "./AuctionDetailsTabs/TrialSlotTab/TrialSlot";
 import RegisterPopup from "./RegisterPopup";
@@ -106,10 +101,15 @@ const AuctionDetails = () => {
   const playerId = localStorage.getItem("playerId");
   const userRole = useSelector((state) => state.data?.userRole);
   const [activeTab, setActiveTab] = useState("info");
-  const tournamentId=localStorage.getItem("tournamentId")
+  const tournamentId = localStorage.getItem("tournamentId");
+
+  const isTrialType = useSelector(
+    (state) => state?.data?.auctionDetails?.trailTypeAuction
+  );
 
   useEffect(() => {
     dispatch(fetchUserRole(auctionId, playerId));
+    dispatch(fetchAuctionDetails(auctionId));
   }, [auctionId, playerId]);
 
   const getPrimaryRole = (roles) => {
@@ -155,10 +155,16 @@ const AuctionDetails = () => {
   }, [userRole]);
   const primaryRole = useMemo(() => getPrimaryRole(userRoles), [userRoles]);
 
-  const allowedTabKeys = useMemo(
-    () => getAllAllowedTabs(userRoles),
-    [userRoles]
-  );
+  const allowedTabKeys = useMemo(() => {
+    let tabs = getAllAllowedTabs(userRoles);
+
+    // ❌ Remove slot if NOT trial type
+    if (!isTrialType) {
+      tabs = tabs.filter((tab) => tab !== "slot");
+    }
+
+    return tabs;
+  }, [userRoles, isTrialType]);
 
   const visibleTabs = useMemo(() => {
     return allTabs.filter((tab) => allowedTabKeys.includes(tab.key));
@@ -178,6 +184,7 @@ const AuctionDetails = () => {
       await dispatch(EnrollPlayer(auctionId, playerId));
       toast.success("Successfully Registered For The Tournament");
       setRegisterPopupOpen(false);
+      dispatch(fetchUserRole(auctionId, playerId));
       // dispatch(fetchAuctionDetails(auctionId));
     } catch (error) {
       console.error(error);
@@ -185,12 +192,16 @@ const AuctionDetails = () => {
     }
   };
 
-
   /* ===============================
      TAB CONTENT RENDER
   ================================ */
   const renderTab = () => {
     if (!allowedTabKeys.includes(activeTab)) {
+      return <div className="text-white">Access Denied</div>;
+    }
+
+    // Extra protection
+    if (activeTab === "slot" && !isTrialType) {
       return <div className="text-white">Access Denied</div>;
     }
 
@@ -217,10 +228,10 @@ const AuctionDetails = () => {
         return <Categories auctionId={auctionId} />;
 
       case "myteam":
-        return <OwnerTeamDetails auctionId={auctionId} playerId={playerId}/>;
+        return <OwnerTeamDetails auctionId={auctionId} playerId={playerId} />;
 
       case "assignedPlayers":
-        return <AssignedPlayersToSelector auctionId={auctionId}/>;
+        return <AssignedPlayersToSelector auctionId={auctionId} />;
 
       case "trialslot":
         return <TrialSlot auctionId={auctionId} />;
@@ -296,14 +307,19 @@ const AuctionDetails = () => {
 
               {/* CTA */}
               <div className="rounded-xl bg-[#154947] p-4 text-white mt-3">
-                {userRole.auctionPlayer !== true && <h3 className="font-semibold mb-2">Get Ready to Compete!</h3>}
-                <button className={`w-full  text-[#02271E] font-semibold py-2 rounded-lg ${userRole.auctionPlayer
+                {userRole.auctionPlayer !== true && (
+                  <h3 className="font-semibold mb-2">Get Ready to Compete!</h3>
+                )}
+                <button
+                  className={`w-full  text-[#02271E] font-semibold py-2 rounded-lg ${
+                    userRole.auctionPlayer
                       ? "bg-gray-500 text-gray-200 cursor-not-allowed"
                       : "bg-[var(--color-warm)] text-black "
-                      }`}
-                onClick={()=>setRegisterPopupOpen(true)}
-                disabled={userRole.auctionPlayer}>
-                 {userRole.auctionPlayer ? "Registered" :"Register / Enroll"} 
+                  }`}
+                  onClick={() => setRegisterPopupOpen(true)}
+                  disabled={userRole.auctionPlayer}
+                >
+                  {userRole.auctionPlayer ? "Registered" : "Register / Enroll"}
                 </button>
               </div>
             </div>
@@ -311,7 +327,7 @@ const AuctionDetails = () => {
 
           {/* CONTENT */}
           <section className="col-span-12 md:col-span-9">
-            <div className="bg-black/80 backdrop-blur-md p-6 min-h-[500px] text-white border border-white/10">
+            <div className="bg-black/80 backdrop-blur-md p-6 h-full text-white border border-white/10">
               {renderTab()}
             </div>
           </section>
