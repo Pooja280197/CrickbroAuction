@@ -35,7 +35,7 @@ const tabs = [
   { key: "addFields", label: "Add New Field" },
 ];
 
-const Settings = ({ auctionId }) => {
+const Settings = ({ auctionId ,isTrialType}) => {
   const [activeTab, setActiveTab] = useState("addAdmin");
   const [contact, setContact] = useState("");
   const [name, setName] = useState("");
@@ -74,6 +74,8 @@ const Settings = ({ auctionId }) => {
   const selectorList = selectorsData?.selectors || [];
   const ownerList = teamOwnersData?.data || [];
   const ratingFields = auction?.ratingField || [];
+
+  
 
   useEffect(() => {
     if (activeTab === "addSelectors" || activeTab === "addAdmin") {
@@ -261,6 +263,12 @@ const Settings = ({ auctionId }) => {
     }
   };
 
+  const visibleTabs = isTrialType
+  ? tabs:
+   tabs.filter((tab) => tab.key !== "addSelectors" && tab.key !== "rating" && tab.key !== "addFields" )
+
+  
+
   const filteredAuctionTeam = Array.isArray(tournamentTeam)
     ? tournamentTeam?.filter((item) => {
         const player = item?.teamId;
@@ -312,7 +320,7 @@ const Settings = ({ auctionId }) => {
     }
   };
 
-  console.log(ratingFields, "rating");
+  
 
   const renderContent = () => {
     if (activeTab === "addAdmin" && isAdminLoading) {
@@ -326,6 +334,8 @@ const Settings = ({ auctionId }) => {
     if (activeTab === "addOwner" && isTeamOwnersLoading) {
       return <Loader text="Loading Team Owners..." />;
     }
+
+    
 
     switch (activeTab) {
       case "addAdmin":
@@ -716,7 +726,7 @@ const Settings = ({ auctionId }) => {
       {/* ===== TABS ===== */}
       <div className="border-b border-gray-700">
         <ul className="flex gap-8">
-          {tabs.map((tab) => (
+          {visibleTabs.map((tab) => (
             <li
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}

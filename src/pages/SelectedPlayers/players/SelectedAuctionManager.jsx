@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X, Filter, Users, Trash2, CheckSquare, Square } from "lucide-react";
 import PlayerCard from "./SelectedPlayerCard";
 import AssignCategoryModal from "./AssignCategoryModal";
 import PlayerDetailsPopup from "./PlayerDetailsPopup";
@@ -8,6 +8,8 @@ import axios from "axios";
 import { useDebounce } from "../../../components/useDebounce";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  getAssignedinCategory,
+  getAssignedPlayers,
   getSelectedPlayers,
   getUnassignedinCategory,
 } from "../../../redux/actions";
@@ -15,8 +17,6 @@ import {
 const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
   const dispatch = useDispatch();
   const isTrialType = auctionTypeTrial;
-  // const [selectPlayersList, SetSelectPlayersList] = useState([]);
-  const [auctionPlayers, setAuctionPlayers] = useState([]);
   const [showResetUnassigned, setShowResetUnassigned] = useState(false);
   const [showResetAuction, setShowResetAuction] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState("unassignedSelected");
@@ -53,7 +53,6 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
   const [toast, setToast] = useState(null);
-  // Category Filtering Auction Tab
   const [categorySearchId, setCategorySearchId] = useState("");
   const [categorySearchName, setCategorySearchName] = useState("");
   const [showBulkActions, setShowBulkActions] = useState(false);
@@ -63,18 +62,13 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
   const [searchUnassign, setSearchUnassign] = useState("");
   const [searchAssign, setSearchAssign] = useState("");
 
-  // Pagination states
-  // const [unassignedPage, setUnassignedPage] = useState(1);
-  const [auctionPage, setAuctionPage] = useState(1);
-  // const [unassignedTotalPages, setUnassignedTotalPages] = useState(1);
   const [auctionTotalPages, setAuctionTotalPages] = useState(1);
-  // const [unassignedTotal, setUnassignedTotal] = useState(0);
   const [auctionTotal, setAuctionTotal] = useState(0);
   const [playerTypes, setPlayerTypes] = useState([
-    { label: "Batsman", value: "batsman" },
-    { label: "Bowler", value: "bowler" },
-    { label: "All-rounder", value: "all-rounder" },
-    { label: "Wicketkeeper", value: "wicketkeeper" },
+    { label: "Batsman", value: "batsman", color: "text-cyan-400" },
+    { label: "Bowler", value: "bowler", color: "text-emerald-400" },
+    { label: "All-rounder", value: "allrounder", color: "text-amber-400" },
+    { label: "Wicketkeeper", value: "wicketkeeper", color: "text-pink-400" },
   ]);
 
   const [slotDetail, setSlotDetail] = useState([]);
@@ -86,17 +80,20 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
 
   const enableBulkMode = Boolean(categorySearchId);
 
-  //  SetSelectPlayersList(data || []);
-  //     setUnassignedPage(currentPage || 1);
-  //     setUnassignedTotalPages(pages || 1);
-  //     setUnassignedTotal(total || 0);
   const unassignedPlayers = useSelector((state) =>
     isTrialType ? state?.data?.selectedPlayers : state?.data?.unassignedPlayers
   );
   const selectPlayersList = unassignedPlayers?.list || [];
   const unassignedTotalPages = unassignedPlayers?.pages || 1;
   const unassignedTotal = unassignedPlayers?.total || 0;
-  const unassignedPage = unassignedPlayers?.page || 1;
+  const unassignedPage = unassignedPlayers?.page;
+
+  const assignedPlayers = useSelector((state) =>
+    isTrialType ? state?.data?.assignedinCategory : state?.data?.assignedPlayers
+  );
+
+  const auctionPlayers = assignedPlayers?.list || [];
+  const auctionPage=assignedPlayers?.page
 
   const [pendingDelete, setPendingDelete] = useState(null);
 
@@ -121,7 +118,6 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
     }
   }, [auctionId]);
 
-  // Fetch slot list
   const fetchSlotList = async () => {
     try {
       const res = await axios.get(
@@ -139,7 +135,6 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
     }
   };
 
-  // Fetch sessions for selected slot
   const fetchSessionsForSlot = (slotId) => {
     const slot = slotDetail.find((s) => s._id === slotId);
     if (slot && slot.sessions) {
@@ -156,163 +151,62 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
     }
   };
 
-  const fetchUnassignedPlayers = () => {
-    if (isTrialType) {
-      dispatch(
-        getSelectedPlayers({
-          auctionId,
-          page: unassignedPage,
-          itemsPerPage: 8,
-          debouncedUnassignPlayer,
-          searchUnassign,
-          typeFilter,
-          fromRating,
-          toRating,
-          slotFilter,
-          slotSessionFilter,
-        })
-      );
-    } else {
-      dispatch(
-        getUnassignedinCategory({
-          auctionId,
-          page: unassignedPage,
-          itemsPerPage: 8,
-          debouncedUnassignPlayer,
-          searchUnassign,
-          typeFilter,
-        })
-      );
-    }
+  const fetchUnassignedPlayers = (page = 1) => {
+    dispatch(
+      isTrialType
+        ? getSelectedPlayers({
+            auctionId,
+            page,
+            itemsPerPage: 8,
+            debouncedUnassignPlayer,
+            typeFilter,
+            fromRating,
+            toRating,
+            slotFilter,
+            slotSessionFilter,
+          })
+        : getUnassignedinCategory({
+            auctionId,
+            page,
+            itemsPerPage: 8,
+            debouncedUnassignPlayer,
+            typeFilter,
+          })
+    );
   };
 
-
-  // const fetchUnassignedPlayers = async (page= 1) => {
-  //   try {
-  //     const params = new URLSearchParams({
-  //       categoryFilter: "notassignincategory",
-  //       page: page.toString(),
-  //       limit: "8",
-  //     });
-
-  //     // Search filter
-  //     const searchValue = debouncedUnassignPlayer || searchUnassign;
-  //     if (searchValue) {
-  //       params.append("search", searchValue);
-  //     }
-
-  //     // Type filter - ADD THIS
-  //     if (typeFilter) {
-  //       params.append("playerType", typeFilter); // Make sure parameter name matches your API
-  //     }
-
-  //     // Rating filters - ADD THESE
-  //     if (fromRating !== "") {
-  //       params.append("ratingFrom", fromRating.toString());
-  //     }
-  //     if (toRating !== "") {
-  //       params.append("ratingTo", toRating.toString());
-  //     }
-
-  //     // Slot filters
-  //     if (slotFilter) {
-  //       params.append("slotId", slotFilter);
-  //     }
-
-  //     if (slotSessionFilter) {
-  //       params.append("sessionId", slotSessionFilter);
-  //     }
-
-  //     const res = await axios.get(
-  //       `/webSiteApi/auction/getSelectPlayers/${auctionId}?${params.toString()}`
-  //     );
-
-  //     const { data, page: currentPage, pages, total } = res?.data?.data || {};
-  //     SetSelectPlayersList(data || []);
-  //     setUnassignedPage(currentPage || 1);
-  //     setUnassignedTotalPages(pages || 1);
-  //     setUnassignedTotal(total || 0);
-
-  //     if (debouncedUnassignPlayer && page === 1) {
-  //       setSelectedIds([]);
-  //     }
-  //   } catch (err) {
-  //     console.error("Error loading unassigned", err);
-  //     showToast({
-  //       type: "error",
-  //       message: "Failed to load unassigned players.",
-  //     });
-  //   }
-  // };
-
-  
-
-  const fetchAssignedPlayers = async (page = 1) => {
-    try {
-      const params = new URLSearchParams({
-        categoryFilter: "assignincategory",
-        page: page.toString(),
-        limit: "8",
-      });
-
-      // Add search if available
-      if (debouncedAssignPlayer) {
-        params.append("search", debouncedAssignPlayer);
-      }
-
-      // Type filter - ADD THIS
-      if (typeFilterA) {
-        params.append("playerType", typeFilterA); // Make sure parameter name matches your API
-      }
-
-      // Rating filters - ADD THESE
-      if (fromRatingA !== "") {
-        params.append("ratingFrom", fromRatingA.toString());
-      }
-      if (toRatingA !== "") {
-        params.append("ratingTo", toRatingA.toString());
-      }
-
-      // Category filter - ADD THIS (use categoryId parameter)
-      if (categorySearchId) {
-        params.append("categoryId", categorySearchId);
-      }
-
-      // Slot filters - ADD THESE if your API supports them
-      if (slotFilterA) {
-        params.append("slotId", slotFilterA);
-      }
-
-      if (slotSessionFilterA) {
-        params.append("sessionId", slotSessionFilterA);
-      }
-
-      const res = await axios.get(
-        `/webSiteApi/auction/getSelectPlayers/${auctionId}?${params.toString()}`
-      );
-
-      const { data, page: currentPage, pages, total } = res?.data?.data || {};
-      setAuctionPlayers(data || []);
-      setAuctionPage(currentPage || 1);
-      setAuctionTotalPages(pages || 1);
-      setAuctionTotal(total || 0);
-
-      // Reset selection when search changes
-      if (debouncedAssignPlayer && page === 1) {
-        setSelectedAuctionIds([]);
-      }
-    } catch (err) {
-      console.error("Error loading players for auction", err);
-      showToast({
-        type: "error",
-        message: "Failed to load players for auction.",
-      });
-    }
+  const fetchAssignedPlayers = (page = 1) => {
+    dispatch(
+      isTrialType
+        ? getAssignedinCategory({
+            auctionId,
+            page,
+            itemsPerPage: 8,
+            debouncedAssignPlayer,
+            typeFilter: typeFilterA,
+            fromRating: fromRatingA,
+            toRating: toRatingA,
+            categorySearchId,
+            slotFilter: slotFilterA,
+            slotSessionFilter: slotSessionFilterA,
+          })
+        : getAssignedPlayers({
+            auctionId,
+            page,
+            itemsPerPage: 8,
+            debouncedAssignPlayer,
+            typeFilter: typeFilterA,
+            fromRating: fromRatingA,
+            toRating: toRatingA,
+            categorySearchId,
+            slotFilter: slotFilterA,
+            slotSessionFilter: slotSessionFilterA,
+          })
+    );
   };
-  
+
   useEffect(() => {
     if (!auctionId) return;
-    // Fetch slot list on component mount
     fetchSlotList();
 
     if (activeSubTab === "unassignedSelected") {
@@ -326,16 +220,13 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
     if (!auctionId) return;
 
     if (activeSubTab === "unassignedSelected") {
-      // setUnassignedPage(1);
       fetchUnassignedPlayers(1);
     } else {
-      setAuctionPage(1);
       fetchAssignedPlayers(1);
     }
   }, [activeSubTab]);
 
   useEffect(() => {
-    // Reset session filter when slot changes
     if (activeSubTab === "unassignedSelected") {
       setSlotSessionFilter("");
       if (slotFilter) {
@@ -369,7 +260,6 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
         slotFilter !== "" ||
         slotSessionFilter !== ""
     );
-    // setUnassignedPage(1);
     fetchUnassignedPlayers(1);
   };
 
@@ -388,12 +278,10 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
         debouncedAssignPlayer !== "" ||
         slotFilterA !== "" ||
         slotSessionFilterA !== "" ||
-        categorySearchId !== "" // Add category to reset condition
+        categorySearchId !== ""
     );
-    setAuctionPage(1);
+  
     fetchAssignedPlayers(1);
-
-    // Set showBulkActions based on category selection
     setShowBulkActions(!!categorySearchId);
   };
 
@@ -414,9 +302,7 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
     setShowResetUnassigned(false);
     setSelectedIds([]);
     setSelectedSlotSessions([]);
-    // setUnassignedPage(1);
-
-    // Fetch with empty filters
+    
     const params = new URLSearchParams({
       categoryFilter: "notassignincategory",
       page: "1",
@@ -427,13 +313,6 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
       .get(
         `/webSiteApi/auction/getSelectPlayers/${auctionId}?${params.toString()}`
       )
-      .then((res) => {
-        // const { data, page: currentPage, pages, total } = res?.data?.data || {};
-        // SetSelectPlayersList(data || []);
-        // setUnassignedPage(currentPage || 1);
-        // setUnassignedTotalPages(pages || 1);
-        // setUnassignedTotal(total || 0);
-      })
       .catch((err) => {
         console.error("Error resetting unassigned", err);
         showToast({
@@ -449,8 +328,8 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
     setTypeFilterA("");
     setSlotFilterA("");
     setSlotSessionFilterA("");
-    setSearchAssign(""); // Clear search input
-    setCategorySearchId(""); // Also reset category filter
+    setSearchAssign("");
+    setCategorySearchId("");
     setCategorySearchName("");
     setAppliedFiltersA({
       from: "",
@@ -462,14 +341,12 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
     setShowResetAuction(false);
     setShowBulkActions(false);
     setSelectedAuctionIds([]);
-    setAuctionPage(1);
+  
     fetchAssignedPlayers(1);
   };
 
   useEffect(() => {
     if (activeSubTab === "auctionPlayers" && categorySearchId) {
-      // Trigger search when category is selected
-      setAuctionPage(1);
       fetchAssignedPlayers(1);
       setShowBulkActions(true);
     }
@@ -483,14 +360,11 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
   const handleAuctionPlayerSelect = (playerId) => {
     if (!enableBulkMode) return;
 
-    // If category is "All Categories" (empty string), allow only single selection
     if (categorySearchId === "") {
-      // Single selection mode
       setSelectedAuctionIds((prev) =>
         prev.includes(playerId) ? [] : [playerId]
       );
     } else {
-      // Multiple selection mode for specific category
       setSelectedAuctionIds((prev) =>
         prev.includes(playerId)
           ? prev.filter((id) => id !== playerId)
@@ -498,7 +372,6 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
       );
     }
 
-    // Get the selected player to set category IDs
     const selectedPlayer = auctionPlayers.find(
       (p) => p.player._id === playerId
     );
@@ -509,60 +382,24 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
 
   useEffect(() => {
     if (activeSubTab === "unassignedSelected") {
-      // setUnassignedPage(1);
       fetchUnassignedPlayers(1);
     }
   }, [debouncedUnassignPlayer]);
 
   useEffect(() => {
     if (activeSubTab === "auctionPlayers") {
-      setAuctionPage(1);
       fetchAssignedPlayers(1);
     }
   }, [debouncedAssignPlayer]);
-
-  // const handleAssignSubmit = async (categoryId) => {
-  //   try {
-  //     await axios.post(`/webSiteApi/auction/assignPlayersToCategory`, {
-  //       auctionId,
-  //       categoryId,
-  //       playerIds: selectedIds,
-  //     });
-  //     setSelectedIds([]);
-  //     await fetchUnassignedPlayers();
-  //     await fetchAssignedPlayers();
-  //     setAssignModalOpen(false);
-  //     setActiveSubTab("auctionPlayers");
-  //     showToast({
-  //       type: "success",
-  //       message: "Players assigned to category successfully!",
-  //     });
-
-  //   } catch (error) {
-  //     console.error("Assign failed", error);
-
-  //     showToast({
-  //       type: "error",
-  //       message: "Failed to assign players.",
-  //     });
-  //   }
-  // };
 
   const startOptimisticDelete = (ids, cId) => {
     const playersToRemove = auctionPlayers.filter((p) =>
       ids.includes(p.player._id)
     );
 
-    // Immediately remove from UI
-    setAuctionPlayers((prev) =>
-      prev.filter((p) => !ids.includes(p.player._id))
-    );
-
-    // 🔥 TIMER = 5 seconds
     let timeLeft = 5;
     setUndoTimer(timeLeft);
 
-    // Countdown interval
     const intervalId = setInterval(() => {
       timeLeft -= 1;
       setUndoTimer(timeLeft);
@@ -572,7 +409,6 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
       }
     }, 1000);
 
-    // Timeout to permanently delete
     const timeoutId = setTimeout(async () => {
       clearInterval(intervalId);
       setUndoTimer(null);
@@ -598,14 +434,12 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
       }
     }, 5000);
 
-    // Store pending delete info
     setPendingDelete({
       ids,
       players: playersToRemove,
       timeoutId,
     });
 
-    // Show toast with Undo button + live timer
     showToast({
       type: "success",
       message: `${ids.length} player(s) removed. Undo? (${timeLeft}s)`,
@@ -625,7 +459,6 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
       },
     });
   };
-  console.log(deleteCandidate, "delete");
 
   const handleConfirmDelete = () => {
     if (!deleteCandidate) return;
@@ -638,7 +471,6 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
   const handleBulkDeleteConfirm = () => {
     if (!selectedAuctionIds.length || !categorySearchId) return;
 
-    // Additional check for "All Categories"
     if (categorySearchId === "") {
       showToast({
         type: "error",
@@ -649,28 +481,24 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
     }
 
     startOptimisticDelete(selectedAuctionIds, categorySearchId);
-
     setBulkDeleteConfirmOpen(false);
   };
 
   const handleSelectAllVisible = () => {
     const currentPageIds = selectPlayersList.map((p) => p.player._id);
-
     const allSelected = currentPageIds.every((id) => selectedIds.includes(id));
 
     if (allSelected) {
-      // Deselect all on current page
       setSelectedIds((prev) =>
         prev.filter((id) => !currentPageIds.includes(id))
       );
     } else {
-      // Select all on current page
       const newSet = new Set([...selectedIds, ...currentPageIds]);
       setSelectedIds(Array.from(newSet));
     }
   };
+
   const handleSelectAllAuctionVisible = () => {
-    // If category is "All Categories" or empty, don't allow select all
     if (!categorySearchId || categorySearchId === "") {
       showToast({
         type: "error",
@@ -681,7 +509,6 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
     }
 
     const currentPageIds = auctionPlayers.map((p) => p.player._id);
-
     const allSelected = currentPageIds.every((id) =>
       selectedAuctionIds.includes(id)
     );
@@ -713,12 +540,10 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
     const handleSearch = isUnassigned
       ? handleSearchUnassigned
       : handleSearchAuction;
-
     const handleReset = isUnassigned
       ? handleResetUnassigned
       : handleResetAuction;
 
-    // In renderFilterRow, update the showReset condition:
     const showReset = isUnassigned
       ? showResetUnassigned ||
         searchUnassign !== "" ||
@@ -730,106 +555,113 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
         slotFilterA !== "" ||
         slotSessionFilterA !== "";
 
-    const count = isUnassigned
-      ? unassignedTotal // Use total from API response
-      : auctionTotal; // Use total from API response
-
-    console.log(selectPlayersList, "playerList");
+    const count = isUnassigned ? unassignedTotal : auctionTotal;
 
     return (
-      <div className="w-full">
-        {/* All filters in one line */}
-        <div className="relative flex-1 min-w-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-
-          <input
-            type="text"
-            placeholder="Search by player name or batch ID..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-            value={isUnassigned ? searchUnassign : searchAssign}
-            onChange={(e) =>
-              isUnassigned
-                ? setSearchUnassign(e.target.value)
-                : setSearchAssign(e.target.value)
-            }
-          />
+      <div className="w-full space-y-4">
+        {/* Top row: Search + Filters button */}
+        <div className="flex items-center gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by player name or batch ID..."
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-xl text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+              value={isUnassigned ? searchUnassign : searchAssign}
+              onChange={(e) =>
+                isUnassigned
+                  ? setSearchUnassign(e.target.value)
+                  : setSearchAssign(e.target.value)
+              }
+            />
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-gray-400" />
+            <span className="text-sm text-gray-400">Filters</span>
+          </div>
         </div>
-        <div className="flex flex-col lg:flex-row gap-3 items-end w-full">
-          {/* Search Bar */}
 
-          {/* Rating From */}
-         {isTrialType && <div className="flex flex-col w-full lg:w-auto">
-            <label className="text-xs font-semibold text-gray-600 mb-1">
-              Rating
-            </label>
-            <div className="flex gap-2">
-              <select
-                value={from === "" ? "" : from}
-                onChange={(e) => {
-                  const value =
-                    e.target.value === "" ? "" : Number(e.target.value);
-                  setFrom(value);
-                  if (value !== "" && to !== "" && to < value) {
-                    setTo("");
-                  }
-                }}
-                className="border rounded-lg px-2 py-2 text-sm text-black bg-gray-50 hover:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 w-20"
-              >
-                <option value="">From</option>
-                {ratingOptions.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
-
-              {/* Rating To */}
-              <select
-                value={to === "" ? "" : to}
-                disabled={from === ""}
-                onChange={(e) =>
-                  setTo(e.target.value === "" ? "" : Number(e.target.value))
-                }
-                className={`border rounded-lg px-2 py-2 text-sm w-20 transition text-black ${
-                  from === ""
-                    ? "bg-gray-100 cursor-not-allowed"
-                    : "bg-gray-50 hover:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                }`}
-              >
-                <option value="">To</option>
-                {ratingOptions
-                  .filter((r) => from === "" || r >= from)
-                  .map((r) => (
+        {/* Filter controls */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+          {/* Rating filters */}
+          {isTrialType && (
+            <>
+              <div className="flex flex-col">
+                <label className="text-xs font-medium text-gray-400 mb-1.5">
+                  Rating From
+                </label>
+                <select
+                  value={from === "" ? "" : from}
+                  onChange={(e) => {
+                    const value =
+                      e.target.value === "" ? "" : Number(e.target.value);
+                    setFrom(value);
+                    if (value !== "" && to !== "" && to < value) {
+                      setTo("");
+                    }
+                  }}
+                  className="bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                >
+                  <option value="">Select rating</option>
+                  {ratingOptions.map((r) => (
                     <option key={r} value={r}>
                       {r}
                     </option>
                   ))}
-              </select>
-            </div>
-          </div>}
+                </select>
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-xs font-medium text-gray-400 mb-1.5">
+                  Rating To
+                </label>
+                <select
+                  value={to === "" ? "" : to}
+                  disabled={from === ""}
+                  onChange={(e) =>
+                    setTo(e.target.value === "" ? "" : Number(e.target.value))
+                  }
+                  className={`bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all ${
+                    from === "" ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                >
+                  <option value="">Select rating</option>
+                  {ratingOptions
+                    .filter((r) => from === "" || r >= from)
+                    .map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </>
+          )}
 
           {/* Player Type */}
-          <div className="flex flex-col w-full lg:w-auto">
-            <label className="text-xs font-semibold text-gray-600 mb-1">
-              Type
+          <div className="flex flex-col">
+            <label className="text-xs font-medium text-gray-400 mb-1.5">
+              Player Type
             </label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="border rounded-lg px-3 py-2 text-sm text-black bg-gray-50 hover:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 w-full lg:w-32"
+              className="bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
             >
               <option value="">All Types</option>
               {playerTypes.map((t) => (
-                <option value={t.value} key={t.label}>
+                <option value={t.value} key={t.label} className={t.color}>
                   {t.label}
                 </option>
               ))}
             </select>
           </div>
 
-          {(isUnassigned && isTrialType) && (
-            <div className="flex flex-col w-full lg:w-auto">
-              <label className="text-xs font-semibold text-gray-600 mb-1">
+          {/* Slot filter */}
+          {isUnassigned && isTrialType && (
+            <div className="flex flex-col">
+              <label className="text-xs font-medium text-gray-400 mb-1.5">
                 Slot
               </label>
               <select
@@ -844,7 +676,7 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
                     setSlotSession("");
                   }
                 }}
-                className="border rounded-lg px-3 py-2 text-sm text-black bg-gray-50 hover:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 w-full lg:w-40"
+                className="bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
               >
                 <option value="">All Slots</option>
                 {slotDetail.map((slot) => (
@@ -856,16 +688,16 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
             </div>
           )}
 
-          {/* Session Filter (only visible when slot is selected) */}
+          {/* Session Filter */}
           {slot && selectedSlotSessions.length > 0 && (
-            <div className="flex flex-col w-full lg:w-auto">
-              <label className="text-xs font-semibold text-gray-600 mb-1">
+            <div className="flex flex-col">
+              <label className="text-xs font-medium text-gray-400 mb-1.5">
                 Session
               </label>
               <select
                 value={slotSession}
                 onChange={(e) => setSlotSession(e.target.value)}
-                className="border rounded-lg px-3 py-2 text-sm text-black bg-gray-50 hover:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 w-full lg:w-40"
+                className="bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
               >
                 <option value="">All Sessions</option>
                 {selectedSlotSessions.map((session) => (
@@ -877,10 +709,10 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
             </div>
           )}
 
-          {/* Category - Only for Auction Tab */}
+          {/* Category filter - Only for Auction Tab */}
           {!isUnassigned && (
-            <div className="flex flex-col w-full lg:w-auto">
-              <label className="text-xs font-semibold text-gray-600 mb-1">
+            <div className="flex flex-col">
+              <label className="text-xs font-medium text-gray-400 mb-1.5">
                 Category
               </label>
               <select
@@ -891,7 +723,7 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
                   setCategorySearchId(value);
                   setCategorySearchName(found?.name || "");
                 }}
-                className="border rounded-lg px-3 py-2 text-sm text-black bg-gray-50 hover:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 w-full lg:w-40"
+                className="bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
               >
                 <option value="">All Categories</option>
                 {allCategories.map((cat) => (
@@ -902,152 +734,189 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
               </select>
             </div>
           )}
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2 w-full lg:w-auto">
+        {/* Action buttons and results */}
+        <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center gap-3">
             <button
               onClick={handleSearch}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 active:scale-[0.97] shadow transition whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold hover:from-cyan-600 hover:to-blue-700 active:scale-[0.98] shadow-lg shadow-cyan-500/20 transition-all"
             >
               <Search className="w-4 h-4" />
-              Search
+              Apply Filters
             </button>
+            
             {showReset && (
               <button
                 onClick={handleReset}
-                className="px-3 py-2 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-100 active:scale-[0.97] transition whitespace-nowrap"
+                className="px-4 py-2.5 rounded-xl border border-gray-600 text-sm font-medium text-gray-300 hover:bg-gray-800/50 hover:border-gray-500 active:scale-[0.98] transition-all"
               >
-                Reset
+                Clear Filters
               </button>
             )}
           </div>
-        </div>
 
-        {/* Results Count */}
-        <div className="text-right mt-2">
-          <span className="text-xs text-gray-600">
-            Found:{" "}
-            <span className="text-purple-600 font-semibold">{count}</span>{" "}
-            players
-          </span>
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-gray-400" />
+            <span className="text-sm text-gray-400">
+              Found:{" "}
+              <span className="font-semibold text-cyan-400">{count}</span> players
+            </span>
+          </div>
         </div>
       </div>
     );
   };
 
   return (
-    <div className="w-full bg-gray-50 border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-      <div className="bg-white border-b">
-        <div className="flex gap-3 px-4 py-3">
+    <div className="w-full bg-black border-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+      {/* Header Tabs */}
+      <div className="border-b border-gray-800">
+        <div className="flex gap-3 px-6 py-4">
           <button
             onClick={() => setActiveSubTab("unassignedSelected")}
-            className={`px-5 py-2 rounded-full text-sm font-semibold flex items-center gap-2 transition-all ${
+            className={`px-6 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 transition-all ${
               activeSubTab === "unassignedSelected"
-                ? "bg-purple-600 text-white shadow"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                ? "bg-gradient-to-r from-cyan-900/30 to-blue-900/30 text-cyan-300 border border-cyan-800/50 shadow-lg shadow-cyan-900/20"
+                : "bg-gray-800/50 text-gray-400 hover:bg-gray-800 hover:text-gray-300 border border-gray-700"
             }`}
           >
-            Selected (Not Assigned)
+            <div className={`w-2 h-2 rounded-full ${activeSubTab === "unassignedSelected" ? "bg-cyan-400" : "bg-gray-600"}`} />
+            {isTrialType ? "Selected (Not Assigned)" : "Assign to Category"}
+            {selectedIds.length > 0 && (
+              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-cyan-900/50 text-cyan-300 border border-cyan-700">
+                {selectedIds.length}
+              </span>
+            )}
           </button>
+          
           <button
             onClick={() => setActiveSubTab("auctionPlayers")}
-            className={`px-5 py-2 rounded-full text-sm font-semibold flex items-center gap-2 transition-all ${
+            className={`px-6 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 transition-all ${
               activeSubTab === "auctionPlayers"
-                ? "bg-purple-600 text-white shadow"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                ? "bg-gradient-to-r from-emerald-900/30 to-green-900/30 text-emerald-300 border border-emerald-800/50 shadow-lg shadow-emerald-900/20"
+                : "bg-gray-800/50 text-gray-400 hover:bg-gray-800 hover:text-gray-300 border border-gray-700"
             }`}
           >
+            <div className={`w-2 h-2 rounded-full ${activeSubTab === "auctionPlayers" ? "bg-emerald-400" : "bg-gray-600"}`} />
             Players for Auction
+            {selectedAuctionIds.length > 0 && (
+              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-emerald-900/50 text-emerald-300 border border-emerald-700">
+                {selectedAuctionIds.length}
+              </span>
+            )}
           </button>
         </div>
       </div>
-      <div className="p-5 space-y-5">
+
+      {/* Main Content */}
+      <div className="p-6 space-y-6">
         {activeSubTab === "unassignedSelected" ? (
           <>
-            <div className="bg-white border rounded-xl p-4 flex flex-col lg:flex-row lg:items-end justify-between gap-4 shadow-sm">
+            {/* Unassigned Section */}
+            <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 space-y-6 backdrop-blur-sm">
               {renderFilterRow("unassigned")}
-              <div className="flex flex-wrap gap-2 justify-end">
-                <button
-                  onClick={handleSelectAllVisible}
-                  className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 transition"
-                >
-                  {selectPlayersList.every((p) =>
-                    selectedIds.includes(p.player?._id)
-                  ) && selectPlayersList.length > 0
-                    ? "Deselect All"
-                    : "Select All (Visible)"}
-                </button>
+              
+              <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-gray-800">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleSelectAllVisible}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-xl text-sm font-medium text-gray-300 hover:bg-gray-800 hover:border-gray-600 transition-all"
+                  >
+                    {selectPlayersList.every((p) =>
+                      selectedIds.includes(p.player?._id)
+                    ) && selectPlayersList.length > 0 ? (
+                      <>
+                        <CheckSquare className="h-4 w-4" />
+                        Deselect All
+                      </>
+                    ) : (
+                      <>
+                        <Square className="h-4 w-4" />
+                        Select All (Visible)
+                      </>
+                    )}
+                  </button>
+                  
+                  <span className="text-sm text-gray-500">
+                    {selectedIds.length} selected
+                  </span>
+                </div>
+
                 <button
                   disabled={selectedIds.length === 0}
                   onClick={() => handleAssignClick(selectedIds)}
-                  className={`px-5 py-2 rounded-lg text-sm font-bold transition ${
+                  className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
                     selectedIds.length > 0
-                      ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow"
-                      : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700 shadow-lg shadow-emerald-500/20"
+                      : "bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700"
                   }`}
                 >
+                  <Users className="h-4 w-4" />
                   Assign to Auction ({selectedIds.length})
                 </button>
               </div>
             </div>
 
-            <div
-              className="max-h-[70vh] overflow-y-auto pt-3 pr-1"
-              // onScroll={handleScrollUnassigned}
-            >
+            {/* Players Grid */}
+            <div className="max-h-[65vh] overflow-y-auto pt-3 pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
               {selectPlayersList?.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-sm text-gray-500 bg-white rounded-xl border">
-                  <Search className="w-8 h-8 mb-3 text-gray-400" />
-                  No players match this filter.
+                <div className="flex flex-col items-center justify-center py-16 text-sm text-gray-400 rounded-2xl border-2 border-dashed border-gray-800 bg-gray-900/30">
+                  <Search className="w-12 h-12 mb-4 text-gray-600" />
+                  <p className="text-lg font-medium text-gray-500 mb-1">No players found</p>
+                  <p className="text-gray-600">Try adjusting your filters or search terms</p>
                 </div>
               ) : (
-                <div className="w-full overflow-x-hidden">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {selectPlayersList.map((player) => (
-                      <PlayerCard
-                        key={player?.player?._id}
-                        player={player}
-                        selected={selectedIds.includes(player?.player?._id)}
-                        selectable
-                        onSelect={() => {
-                          setSelectedIds((prev) =>
-                            prev.includes(player.player._id)
-                              ? prev.filter((id) => id !== player.player._id)
-                              : [...prev, player.player._id]
-                          );
-                        }}
-                        isTrialType={isTrialType}
-                        onViewDetails={() => {
-                          setSelectedPlayerDetails(player);
-                          setIsPlayerDetailsOpen(true);
-                        }}
-                      />
-                    ))}
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  {selectPlayersList.map((player) => (
+                    <PlayerCard
+                      key={player?.player?._id}
+                      player={player}
+                      selected={selectedIds.includes(player?.player?._id)}
+                      selectable
+                      onSelect={() => {
+                        setSelectedIds((prev) =>
+                          prev.includes(player.player._id)
+                            ? prev.filter((id) => id !== player.player._id)
+                            : [...prev, player.player._id]
+                        );
+                      }}
+                      isTrialType={isTrialType}
+                      onViewDetails={() => {
+                        setSelectedPlayerDetails(player);
+                        setIsPlayerDetailsOpen(true);
+                      }}
+                    />
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* Unassigned Pagination Controls */}
+            {/* Pagination */}
             {unassignedTotalPages > 1 && (
-              <div className="flex items-center justify-between mt-4 px-4 py-3 bg-white rounded-lg border border-gray-200">
-                <span className="text-sm text-gray-600">
-                  Page{" "}
-                  <span className="font-semibold text-purple-600">
-                    {unassignedPage}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-semibold">{unassignedTotalPages}</span>{" "}
-                  ({unassignedTotal} total)
-                </span>
+              <div className="flex items-center justify-between px-5 py-4 bg-gray-900/50 rounded-xl border border-gray-800">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400">
+                    Page{" "}
+                    <span className="font-semibold text-cyan-400">
+                      {unassignedPage}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-semibold">{unassignedTotalPages}</span>
+                  </span>
+                  <span className="text-xs text-gray-600 px-2 py-1 bg-gray-800 rounded">
+                    {unassignedTotal} total
+                  </span>
+                </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => fetchUnassignedPlayers(unassignedPage - 1)}
                     disabled={unassignedPage === 1}
-                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                       unassignedPage === 1
-                        ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                        : "bg-purple-600 text-white hover:bg-purple-700"
+                        ? "bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700"
+                        : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600"
                     }`}
                   >
                     ← Previous
@@ -1055,10 +924,10 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
                   <button
                     onClick={() => fetchUnassignedPlayers(unassignedPage + 1)}
                     disabled={unassignedPage === unassignedTotalPages}
-                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                       unassignedPage === unassignedTotalPages
-                        ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                        : "bg-purple-600 text-white hover:bg-purple-700"
+                        ? "bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700"
+                        : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600"
                     }`}
                   >
                     Next →
@@ -1069,129 +938,131 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
           </>
         ) : (
           <>
-            <div className="bg-white border rounded-xl p-4 flex flex-col lg:flex-row lg:items-end justify-between gap-4 shadow-sm">
+            {/* Auction Players Section */}
+            <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 space-y-6 backdrop-blur-sm">
               {renderFilterRow("auction")}
-
-              <div className="flex flex-col items-end gap-2 text-xs text-gray-500">
-                {enableBulkMode && (
-                  <div className="flex flex-col items-end gap-2">
-                    <div className="flex flex-wrap gap-2 justify-end">
+              
+              <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-gray-800">
+                <div className="flex items-center gap-3">
+                  {enableBulkMode && (
+                    <>
                       <button
                         onClick={handleSelectAllAuctionVisible}
-                        className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 transition"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-xl text-sm font-medium text-gray-300 hover:bg-gray-800 hover:border-gray-600 transition-all"
                       >
                         {auctionPlayers.every((p) =>
                           selectedAuctionIds.includes(p.player._id)
-                        ) && auctionPlayers.length > 0
-                          ? "Deselect All"
-                          : "Select All (Visible)"}
+                        ) && auctionPlayers.length > 0 ? (
+                          <>
+                            <CheckSquare className="h-4 w-4" />
+                            Deselect All
+                          </>
+                        ) : (
+                          <>
+                            <Square className="h-4 w-4" />
+                            Select All (Visible)
+                          </>
+                        )}
                       </button>
-
+                      
                       <button
                         disabled={
                           selectedAuctionIds.length === 0 ||
                           categorySearchId === ""
                         }
                         onClick={() => setBulkDeleteConfirmOpen(true)}
-                        className={`px-5 py-2 rounded-lg text-sm font-bold transition ${
+                        className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
                           selectedAuctionIds.length > 0 &&
                           categorySearchId !== ""
-                            ? "bg-red-600 text-white hover:bg-red-700 shadow"
-                            : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                            ? "bg-gradient-to-r from-red-500 to-pink-600 text-white hover:from-red-600 hover:to-pink-700 shadow-lg shadow-red-500/20"
+                            : "bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700"
                         }`}
                       >
+                        <Trash2 className="h-4 w-4" />
                         Delete Selected ({selectedAuctionIds.length})
                       </button>
-                    </div>
-                    <div className="text-xs text-gray-600 italic">
-                      Currently viewing players in:{" "}
-                      <span className="font-semibold text-purple-600">
+                    </>
+                  )}
+                </div>
+
+                <div className="flex flex-col items-end gap-2">
+                  {categorySearchName && (
+                    <div className="text-sm text-gray-400">
+                      Viewing:{" "}
+                      <span className="font-semibold text-emerald-400">
                         {categorySearchName}
                       </span>
                     </div>
-                  </div>
-                )}
-
-                {!enableBulkMode && (
-                  <div className="flex flex-col items-end gap-2 text-xs text-gray-500">
-                    <div className="italic">
-                      Tip: Select a category and click Search to enable bulk
-                      actions
+                  )}
+                  
+                  {!enableBulkMode && (
+                    <div className="text-xs text-amber-400 bg-amber-900/20 px-3 py-1.5 rounded-lg border border-amber-800/30">
+                      💡 Select a category to enable bulk actions
                     </div>
-                    <div className="italic">
-                      Hover on a player to remove individually.
+                  )}
+                  
+                  {enableBulkMode && categorySearchId === "" && (
+                    <div className="text-xs text-yellow-400 bg-yellow-900/20 px-3 py-1.5 rounded-lg border border-yellow-800/30">
+                      ⚠️ Single selection only in "All Categories"
                     </div>
-                  </div>
-                )}
-                {enableBulkMode && categorySearchId === "" && (
-                  <div className="text-xs text-yellow-600 bg-yellow-50 px-3 py-1 rounded-md mt-1">
-                    ⚠️ Single selection only when viewing all categories
-                  </div>
-                )}
-
-                {/* <div className="italic">
-                  Tip: hover on a player to remove individually.
-                </div> */}
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Auction grid */}
-            <div
-              className="max-h-[70vh] overflow-y-auto pt-3 pr-1"
-              // onScroll={handleScrollAuction}
-            >
+            {/* Auction Players Grid */}
+            <div className="max-h-[65vh] overflow-y-auto pt-3 pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
               {auctionPlayers.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-sm text-gray-500 bg-white rounded-xl border">
-                  <Search className="w-8 h-8 mb-3 text-gray-400" />
-                  No players in auction for this filter.
+                <div className="flex flex-col items-center justify-center py-16 text-sm text-gray-400 rounded-2xl border-2 border-dashed border-gray-800 bg-gray-900/30">
+                  <Users className="w-12 h-12 mb-4 text-gray-600" />
+                  <p className="text-lg font-medium text-gray-500 mb-1">No auction players</p>
+                  <p className="text-gray-600">Select a category or adjust filters</p>
                 </div>
               ) : (
-                // <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-                <div className="w-full overflow-x-hidden">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {auctionPlayers.map((player) => (
-                      <PlayerCard
-                        key={player.player._id}
-                        player={player}
-                        selectable
-                        selected={selectedAuctionIds.includes(
-                          player.player._id
-                        )}
-                        onSelect={() =>
-                          handleAuctionPlayerSelect(player.player._id)
-                        }
-                        showDelete
-                        onDelete={() => setDeleteCandidate(player)}
-                        onViewDetails={() => {
-                          setSelectedPlayerDetails(player);
-                          setIsPlayerDetailsOpen(true);
-                        }}
-                      />
-                    ))}
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  {auctionPlayers.map((player) => (
+                    <PlayerCard
+                      key={player.player._id}
+                      player={player}
+                      selectable
+                      selected={selectedAuctionIds.includes(player.player._id)}
+                      onSelect={() => handleAuctionPlayerSelect(player.player._id)}
+                      showDelete
+                      onDelete={() => setDeleteCandidate(player)}
+                      onViewDetails={() => {
+                        setSelectedPlayerDetails(player);
+                        setIsPlayerDetailsOpen(true);
+                      }}
+                    />
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* Auction Pagination Controls */}
+            {/* Pagination */}
             {auctionTotalPages > 1 && (
-              <div className="flex items-center justify-between mt-4 px-4 py-3 bg-white rounded-lg border border-gray-200">
-                <span className="text-sm text-gray-600">
-                  Page{" "}
-                  <span className="font-semibold text-purple-600">
-                    {auctionPage}
-                  </span>{" "}
-                  of <span className="font-semibold">{auctionTotalPages}</span>{" "}
-                  ({auctionTotal} total)
-                </span>
+              <div className="flex items-center justify-between px-5 py-4 bg-gray-900/50 rounded-xl border border-gray-800">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400">
+                    Page{" "}
+                    <span className="font-semibold text-emerald-400">
+                      {auctionPage}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-semibold">{auctionTotalPages}</span>
+                  </span>
+                  <span className="text-xs text-gray-600 px-2 py-1 bg-gray-800 rounded">
+                    {auctionTotal} total
+                  </span>
+                </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => fetchAssignedPlayers(auctionPage - 1)}
                     disabled={auctionPage === 1}
-                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                       auctionPage === 1
-                        ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                        : "bg-purple-600 text-white hover:bg-purple-700"
+                        ? "bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700"
+                        : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600"
                     }`}
                   >
                     ← Previous
@@ -1199,10 +1070,10 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
                   <button
                     onClick={() => fetchAssignedPlayers(auctionPage + 1)}
                     disabled={auctionPage === auctionTotalPages}
-                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                       auctionPage === auctionTotalPages
-                        ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                        : "bg-purple-600 text-white hover:bg-purple-700"
+                        ? "bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700"
+                        : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600"
                     }`}
                   >
                     Next →
@@ -1214,12 +1085,11 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
         )}
       </div>
 
-      {/* Assign modal */}
+      {/* Modals and Toasts */}
       <AssignCategoryModal
         isOpen={assignModalOpen}
         count={selectedIds.length}
         onClose={() => setAssignModalOpen(false)}
-        // onSubmit={handleAssignSubmit}
         auctionId={auctionId}
         selectedIds={selectedIds}
         fetchUnassignedPlayers={fetchUnassignedPlayers}
@@ -1227,97 +1097,106 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
         resetSelectedIds={() => setSelectedIds([])}
       />
 
-      {/* Single delete confirm modal */}
+      {/* Delete Confirmation Modal */}
       {deleteCandidate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Remove from Auction?
+              <h2 className="text-xl font-bold text-red-400 flex items-center gap-2">
+                <Trash2 className="h-5 w-5" />
+                Remove Player
               </h2>
               <button
                 onClick={() => setDeleteCandidate(null)}
-                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100"
+                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-800 transition-colors"
               >
-                <X className="w-4 h-4 text-gray-500" />
+                <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              <span className="font-semibold">
-                {deleteCandidate?.player?.name}
-              </span>{" "}
-              will be removed from{" "}
-              <span className="font-semibold text-emerald-600">
-                Players for Auction
-              </span>{" "}
-              and moved back to{" "}
-              <span className="font-semibold text-purple-600">
-                Selected (Not Assigned)
-              </span>
-              .
-            </p>
-            <div className="flex justify-end gap-2 pt-3">
+            
+            <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+              <p className="text-sm text-gray-300 leading-relaxed">
+                Remove <span className="font-semibold text-white">{deleteCandidate?.player?.name}</span> from{" "}
+                <span className="font-semibold text-emerald-400">Auction Players</span>?
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                Player will be moved back to <span className="text-cyan-400">Selected (Not Assigned)</span>
+              </p>
+            </div>
+            
+            <div className="flex justify-end gap-3 pt-2">
               <button
                 onClick={() => setDeleteCandidate(null)}
-                className="px-4 py-2 text-sm rounded-lg border bg-white text-gray-700 hover:bg-gray-50"
+                className="px-5 py-2.5 text-sm font-medium rounded-xl border border-gray-700 text-gray-400 hover:bg-gray-800 hover:text-gray-300 transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="px-5 py-2 text-sm font-semibold rounded-lg bg-red-500 text-white hover:bg-red-600 shadow"
+                className="px-6 py-2.5 text-sm font-bold rounded-xl bg-gradient-to-r from-red-600 to-pink-700 text-white hover:from-red-700 hover:to-pink-800 shadow-lg shadow-red-500/20 transition-all"
               >
-                Remove
+                Remove Player
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Bulk delete confirm modal */}
+      {/* Bulk Delete Modal */}
       {bulkDeleteConfirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Remove {selectedAuctionIds.length} players from Auction?
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-5">
+            <h2 className="text-xl font-bold text-red-400 flex items-center gap-2">
+              <Trash2 className="h-5 w-5" />
+              Remove {selectedAuctionIds.length} Players
             </h2>
-            <p className="text-sm text-gray-600">
-              They will be moved back to{" "}
-              <span className="font-semibold text-purple-600">
-                Selected (Not Assigned)
-              </span>
-              . You can undo for 5 seconds after removing.
-            </p>
-            <div className="flex justify-end gap-2 pt-3">
+            
+            <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+              <p className="text-sm text-gray-300">
+                Are you sure you want to remove <span className="font-bold text-white">{selectedAuctionIds.length}</span> players from auction?
+              </p>
+              <p className="text-xs text-amber-400 mt-2 flex items-center gap-1">
+                ⚡ You can undo this action for 5 seconds
+              </p>
+            </div>
+            
+            <div className="flex justify-end gap-3 pt-2">
               <button
                 onClick={() => setBulkDeleteConfirmOpen(false)}
-                className="px-4 py-2 text-sm rounded-lg border bg-white text-gray-700 hover:bg-gray-50"
+                className="px-5 py-2.5 text-sm font-medium rounded-xl border border-gray-700 text-gray-400 hover:bg-gray-800 hover:text-gray-300 transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleBulkDeleteConfirm}
-                className="px-5 py-2 text-sm font-semibold rounded-lg bg-red-500 text-white hover:bg-red-600 shadow"
+                className="px-6 py-2.5 text-sm font-bold rounded-xl bg-gradient-to-r from-red-600 to-pink-700 text-white hover:from-red-700 hover:to-pink-800 shadow-lg shadow-red-500/20 transition-all"
               >
-                Remove
+                Remove All
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Toast */}
+      {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+        <div className={`fixed bottom-6 right-6 px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border ${
+          toast.type === 'error' 
+            ? 'bg-red-900/20 border-red-800 text-red-300' 
+            : 'bg-emerald-900/20 border-emerald-800 text-emerald-300'
+        } backdrop-blur-sm`}>
+          <div className={`w-2 h-2 rounded-full ${toast.type === 'error' ? 'bg-red-400' : 'bg-emerald-400'}`} />
           <span>
             {toast.message.replace(/\(\d+s\)/, "")}
-            {undoTimer !== null && ` (${undoTimer}s)`}
+            {undoTimer !== null && (
+              <span className="ml-1 font-semibold text-cyan-400">({undoTimer}s)</span>
+            )}
           </span>
-
+          
           {toast.actionLabel && (
             <button
               onClick={toast.onAction}
-              className="ml-3 underline text-green-300"
+              className="ml-3 px-3 py-1 text-sm rounded-lg bg-gray-800/50 border border-gray-700 hover:bg-gray-800 transition-colors"
             >
               {toast.actionLabel}
             </button>
@@ -1326,7 +1205,7 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
       )}
 
       {/* Player Details Popup */}
-      <PlayerDetailsPopup
+      <PlayerDetailsPopup   
         isOpen={isPlayerDetailsOpen}
         onClose={() => {
           setIsPlayerDetailsOpen(false);

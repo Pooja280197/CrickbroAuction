@@ -222,7 +222,7 @@ const AuctionDetails = () => {
         return <AuctionMatches auctionId={auctionId} />;
 
       case "settings":
-        return <SettingsTab auctionId={auctionId} />;
+        return <SettingsTab auctionId={auctionId} isTrialType={isTrialType} />;
 
       case "categories":
         return <Categories auctionId={auctionId} />;

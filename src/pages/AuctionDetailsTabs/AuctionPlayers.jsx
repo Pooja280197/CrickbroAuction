@@ -211,11 +211,12 @@ const AuctionPlayers = () => {
               onClick={() => handlePlayerTabChange("selected")}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm ${
                 activePlayerTab === "selected"
-                  ? "bg-purple-500 text-white"
+                  ? "bg-[#154947] text-white"
                   : "bg-white text-gray-600 border"
               }`}
             >
-              <Users className="w-4 h-4" /> Selected Players
+              <Users className="w-4 h-4" /> {auctionTypeTrial?"Selected Players":"Assign Players"}
+              
             </button>
              { activePlayerTab ==="all" && 
               <div className=" justify-self-end">

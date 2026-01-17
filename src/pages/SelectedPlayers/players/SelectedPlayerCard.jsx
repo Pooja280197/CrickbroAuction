@@ -48,7 +48,7 @@ export default function PlayerCard({
   onViewDetails,
   isTrialType
 }) {
-  console.log(isTrialType,"type")
+  
   const playerName = player?.player?.name || "Unknown";
   const playerLogo = player?.player?.logo || DUMMY_IMAGE_URL;
   const isPlaceholder = isDummyImage(playerLogo);
@@ -59,7 +59,7 @@ export default function PlayerCard({
   return (
     /* Updated Player card — paste in place of your current card JSX */
     <div
-      className="relative group bg-white rounded-2xl shadow-sm p-4 flex items-start gap-4 max-w-full"
+      className="relative group bg-gray-800 rounded-2xl shadow-sm p-4 flex items-start gap-4 max-w-full"
       style={{ minWidth: 0 }} // prevents flex children from forcing parent width
     >
       {/* LEFT: square avatar (clickable) */}
@@ -114,7 +114,7 @@ export default function PlayerCard({
         </div>
 
         <div className=" flex items-center gap-2">
-          <p className="text-sm font-bold text-gray-900 leading-tight line-clamp-2 break-words min-w-0">
+          <p className="text-sm font-bold text-white leading-tight line-clamp-2 break-words min-w-0">
             {playerName}
           </p>
         </div>
