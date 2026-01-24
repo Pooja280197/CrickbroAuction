@@ -169,7 +169,8 @@ const getSocketUrl = () => {
   return "https://stagingapi.crickbro.com:4001";
 };
 
-const socketUrl = getSocketUrl();
+// const socketUrl = getSocketUrl();
+const socketUrl ="https://stagingapi.crickbro.com:4001"
 
 /* ================= CONNECT SOCKET ================= */
 

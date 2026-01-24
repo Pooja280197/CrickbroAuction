@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const playerId = localStorage.getItem('playerId')
-const tournamentId = localStorage.getItem('tournamentId')
+// const tournamentId = localStorage.getItem('tournamentId')
 
 
 // LOGIN
@@ -225,11 +225,12 @@ export const fetchAuctionDetails = (auctionId) => {
     const url = `/webSiteApi/auction/getAuctionById/${auctionId}`;
     try {
       const response = await axios.get(url);
-      localStorage.setItem('tournamentId', response?.data?.data?.tournament?.id)
+      // localStorage.setItem('tournamentId', response?.data?.data?.tournament?.id)
       dispatch({
         type: "API_SUCCESS",
         key: "auctionDetails",
         payload: response?.data?.data,
+        tournamentId: response?.data?.data?.tournament?.id,
       });
     } catch (error) {
       dispatch({
@@ -1217,7 +1218,7 @@ export const getAuctionTeams = (auctionId) => {
   }
 }
 
-export const getAllAuctionTeam = () => {
+export const getAllAuctionTeam = (tournamentId) => {
   return async (dispatch) => {
     dispatch({ type: "API_START", key: "allAuctionTeams" });
     const url = `/webSiteApi/auction/getTeamList/${tournamentId}`;

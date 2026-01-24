@@ -35,7 +35,7 @@ const tabs = [
   { key: "addFields", label: "Add New Field" },
 ];
 
-const Settings = ({ auctionId ,isTrialType}) => {
+const Settings = ({ auctionId, isTrialType }) => {
   const [activeTab, setActiveTab] = useState("addAdmin");
   const [contact, setContact] = useState("");
   const [name, setName] = useState("");
@@ -74,8 +74,7 @@ const Settings = ({ auctionId ,isTrialType}) => {
   const selectorList = selectorsData?.selectors || [];
   const ownerList = teamOwnersData?.data || [];
   const ratingFields = auction?.ratingField || [];
-
-  
+  const tournamentId = useSelector((state) => state.tournamentId);
 
   useEffect(() => {
     if (activeTab === "addSelectors" || activeTab === "addAdmin") {
@@ -99,6 +98,10 @@ const Settings = ({ auctionId ,isTrialType}) => {
   useEffect(() => {
     if (!auctionId) return;
 
+    if (!auction) {
+      dispatch(fetchAuctionDetails(auctionId));
+    }
+
     if (!adminData) {
       dispatch(fetchAllAdmin(auctionId));
     }
@@ -109,10 +112,7 @@ const Settings = ({ auctionId ,isTrialType}) => {
       dispatch(fetchAllTeamOwners(auctionId));
     }
     if (!tournamentTeam) {
-      dispatch(getAllAuctionTeam());
-    }
-    if (!auction) {
-      dispatch(fetchAuctionDetails(auctionId));
+      dispatch(getAllAuctionTeam(tournamentId));
     }
   }, [auctionId]);
 
@@ -149,8 +149,10 @@ const Settings = ({ auctionId ,isTrialType}) => {
     }
   };
 
+  
+
   const handleAddAdmin = async () => {
-    const payload=sendAdminId?sendAdminId:{mobile:contact,name:name}
+    const payload = sendAdminId ? sendAdminId : { mobile: contact, name: name };
     if (contact.length !== 10) {
       toast.error("Enter valid 10 digit mobile number");
       return;
@@ -161,7 +163,6 @@ const Settings = ({ auctionId ,isTrialType}) => {
     }
 
     try {
-     
       const res = await dispatch(addAuctionAdmin(auctionId, payload));
 
       if (res?.data) {
@@ -189,7 +190,7 @@ const Settings = ({ auctionId ,isTrialType}) => {
   };
 
   const handleAddSelector = async () => {
-    const payload=sendAdminId?sendAdminId:{mobile:contact,name:name}
+    const payload = sendAdminId ? sendAdminId : { mobile: contact, name: name };
     if (contact.length !== 10) {
       toast.error("Enter valid 10 digit mobile number");
       return;
@@ -224,8 +225,12 @@ const Settings = ({ auctionId ,isTrialType}) => {
     }
   };
 
+  console.log(tournamentId,"dgfjk")
+
   const handleAddTeamOwner = async () => {
-    const payload=sendAdminId?sendAdminId:{mobile:contact,name:name,teamId: selectedTeamId}
+    const payload = sendAdminId
+      ? sendAdminId
+      : { mobile: contact, name: name, teamId: selectedTeamId };
     if (!selectedTeamId) {
       toast.error("Please select a team");
       return;
@@ -264,10 +269,13 @@ const Settings = ({ auctionId ,isTrialType}) => {
   };
 
   const visibleTabs = isTrialType
-  ? tabs:
-   tabs.filter((tab) => tab.key !== "addSelectors" && tab.key !== "rating" && tab.key !== "addFields" )
-
-  
+    ? tabs
+    : tabs.filter(
+        (tab) =>
+          tab.key !== "addSelectors" &&
+          tab.key !== "rating" &&
+          tab.key !== "addFields"
+      );
 
   const filteredAuctionTeam = Array.isArray(tournamentTeam)
     ? tournamentTeam?.filter((item) => {
@@ -320,8 +328,6 @@ const Settings = ({ auctionId ,isTrialType}) => {
     }
   };
 
-  
-
   const renderContent = () => {
     if (activeTab === "addAdmin" && isAdminLoading) {
       return <Loader text="Loading admins..." />;
@@ -335,12 +341,10 @@ const Settings = ({ auctionId ,isTrialType}) => {
       return <Loader text="Loading Team Owners..." />;
     }
 
-    
-
     switch (activeTab) {
       case "addAdmin":
         return (
-          <div className="min-h-screen bg-black/50 flex justify-center px-2 py-3">
+          <div className="min-h-screen bg-[var(--color-primary)] flex justify-center px-2 py-3">
             <div className="w-full card-glass relative">
               {/* HEADER */}
               <div className="py-3 text-center border-b border-white/10">
@@ -423,7 +427,7 @@ const Settings = ({ auctionId ,isTrialType}) => {
         );
       case "addSelectors":
         return (
-          <div className="min-h-screen bg-black/50 flex justify-center px-2 py-3">
+          <div className="min-h-screen bg-[var(--color-primary)] flex justify-center px-2 py-3">
             <div className="w-full  card-glass relative">
               {/* HEADER */}
               <div className="py-3 text-center border-b border-white/10">
@@ -507,7 +511,7 @@ const Settings = ({ auctionId ,isTrialType}) => {
 
       case "addOwner":
         return (
-          <div className="min-h-screen bg-black/50 flex justify-center px-2 py-3">
+          <div className="min-h-screen bg-[var(--color-primary)] flex justify-center px-2 py-3">
             <div className="w-full card-glass relative">
               {/* HEADER */}
               <div className="py-3 text-center border-b border-white/10">

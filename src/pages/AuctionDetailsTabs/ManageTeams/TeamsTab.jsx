@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   addTeamToAuction,
+  fetchAuctionDetails,
   getAllAuctionTeam,
   getAuctionTeams,
 } from "../../../redux/actions";
@@ -16,7 +17,8 @@ const tabs = [
 
 const TeamsTab = ({ auctionId }) => {
   const dispatch = useDispatch();
-  const tournamentId = localStorage.getItem("tournamentId");
+  // const tournamentId = localStorage.getItem("tournamentId");
+  const tournamentId = useSelector((state) => state.tournamentId);
   const [activeTab, setActiveTab] = useState("addTeam");
   const [searchAuctionTeam, setSearchAuctionTeam] = useState("");
   //   const [selectedTeamToAuction, setSelectedTeamToAuction] = useState([]);
@@ -65,8 +67,9 @@ const TeamsTab = ({ auctionId }) => {
 
   useEffect(() => {
     if (!auctionId) return;
-    dispatch(getAllAuctionTeam());
+    dispatch(getAllAuctionTeam(tournamentId));
     dispatch(getAuctionTeams(auctionId));
+    dispatch(fetchAuctionDetails(auctionId));
   }, [auctionId]);
 
   const renderContent = () => {
@@ -97,14 +100,14 @@ const TeamsTab = ({ auctionId }) => {
     switch (activeTab) {
       case "addTeam":
         return (
-          <div className=" bg-black/50 flex justify-center items-center px-2">
+          <div className="bg-[var(--color-primary)]  flex justify-center items-center px-2">
             {/* MODAL */}
-            <div className="w-full max-w-7xl h-[90vh] card-glass flex flex-col animate-slideDown">
+            <div className="w-full max-w-7xl h-[90vh] card-glass flex flex-col animate-slideDown ">
               {/* HEADER */}
               <div className="sticky top-0 z-20 px-5 py-3 border-b border-white/10 bg-primary-darker/80 backdrop-blur">
                 <div className="flex flex-col gap-3">
                   {/* TITLE ROW */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between ">
                     <h2 className="text-lg font-oswald tracking-wide text-crickbroYellow flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-accent-gradient"></span>
                       All Teams
@@ -163,7 +166,7 @@ const TeamsTab = ({ auctionId }) => {
                           addTeamToAuction(auctionId, selectedTeam)
                         ).then(() => {
                           // 🔄 refresh data after successful add/remove
-                          dispatch(getAllAuctionTeam());
+                          dispatch(getAllAuctionTeam(tournamentId));
                           dispatch(getAuctionTeams(auctionId));
                           setActiveTab("auctionTeams")
 
@@ -217,7 +220,7 @@ const TeamsTab = ({ auctionId }) => {
 
       case "auctionTeams":
         return (
-          <div className=" bg-black/50 flex justify-center items-center px-2">
+          <div className=" bg-[var(--color-primary)] flex justify-center items-center px-2">
             {/* MODAL */}
             <div className="w-full max-w-7xl h-[90vh] card-glass flex flex-col animate-slideDown">
               {/* HEADER */}
@@ -280,7 +283,7 @@ const TeamsTab = ({ auctionId }) => {
   return (
     <div className="w-full">
       {/* ===== TABS ===== */}
-      <div className="border-b border-gray-700">
+      <div className="border-b border-gray-700 ">
         <ul className="flex gap-8">
           {tabs.map((tab) => (
             <li

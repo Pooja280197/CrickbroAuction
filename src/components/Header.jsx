@@ -4,14 +4,18 @@ import { LogOut, Menu, User, X } from "lucide-react";
 import { motion } from "framer-motion";
 import logo from "../assets/Images/Logo2.png";
 import LoginPopup from "./LoginPopup";
+import ComingSoonModal from "./ComingSoonModal";
 import { useLoginPopup } from "../context/LoginPopupContext";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 
 const Header = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [showLogin, setShowLogin] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
+  const [comingSoonFeature, setComingSoonFeature] = useState("");
   // const [isLoggedIn, setIsLoggedIn] = useState(false);
   const verifyData = useSelector((state) => state.data.verify);
 
@@ -27,14 +31,26 @@ const Header = () => {
   ];
 
   const handleLogOut = () => {
+    // Clear Redux state
+    dispatch({ type: "LOGOUT" });
+    // Clear localStorage
     localStorage.clear();
     navigate("/");
     setIsSettingsOpen(false); // Close dropdown on logout
   };
 
-  const handleNav = (path) => {
-    navigate(path);
-    setMobileMenu(false);
+  const handleComingSoon = (featureName) => {
+    setComingSoonFeature(featureName);
+    setComingSoonOpen(true);
+  };
+
+  const handleNav = (path, label) => {
+    if (path === "#") {
+      handleComingSoon(label);
+    } else {
+      navigate(path);
+      setMobileMenu(false);
+    }
   };
 
   // close dropdowns on outside click
@@ -83,7 +99,7 @@ const Header = () => {
               <span
                 key={item.label}
                 className="nav-link"
-                onClick={() => navigate(item.path)}
+                onClick={() => handleNav(item.path, item.label)}
               >
                 {item.label}
               </span>
@@ -147,7 +163,7 @@ const Header = () => {
               <div
                 className="flex items-center gap-3 cursor-pointer"
                 onClick={() => {
-                  handleNav("/");
+                  handleNav("/", "Home");
                   setMobileMenu(false);
                 }}
               >
@@ -177,7 +193,8 @@ const Header = () => {
                 <button
                   key={item.label}
                   onClick={() => {
-                    handleNav(item.path);
+                    handleNav(item.path, item.label);
+                    setMobileMenu(false);
                   }}
                   className="text-left nav-link w-full py-3 text-base"
                 >
@@ -214,6 +231,13 @@ const Header = () => {
 
       {/* Login Popup */}
       <LoginPopup isOpen={showLogin} onClose={() => setShowLogin(false)} />
+
+      {/* Coming Soon Modal */}
+      <ComingSoonModal
+        isOpen={comingSoonOpen}
+        featureName={comingSoonFeature}
+        onClose={() => setComingSoonOpen(false)}
+      />
     </>
   );
 };

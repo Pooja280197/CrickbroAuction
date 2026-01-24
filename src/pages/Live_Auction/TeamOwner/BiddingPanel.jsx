@@ -643,12 +643,10 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useLocation, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { connectAuctionSocket, disconnectSocket } from "../SocketClient";
 import { toast } from "react-toastify";
 import PurchasedPlayerCard from "./PurchasedPlayerCard";
-
-/* ================= COMPONENT ================= */
 
 const BiddingPanel = () => {
   const { auctionId } = useParams();
@@ -656,7 +654,6 @@ const BiddingPanel = () => {
   const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [currentPlayer, setCurrentPlayer] = useState(null);
   const [bidAmount, setBidAmount] = useState(null);
   const [bidHistory, setBidHistory] = useState([]);
@@ -665,6 +662,7 @@ const BiddingPanel = () => {
   const [socketInstance, setSocketInstance] = useState(null);
   const [playerId, setPlayerId] = useState(null);
   const [purchasedPlayers, setPurchasedPlayers] = useState([]);
+  const [activeTab, setActiveTab] = useState("overview");
 
   const dummyImage =
     "https://crickbro.s3.ap-south-1.amazonaws.com/uploads/dummyImage.png";
@@ -673,14 +671,18 @@ const BiddingPanel = () => {
   /* ---------- PLAYER ID ---------- */
   useEffect(() => {
     const storedPlayerId =
-      localStorage.getItem("playerId") ||
-      sessionStorage.getItem("playerId");
-    setPlayerId("68da29826fe07f64bf45a1ee");
+      localStorage.getItem("playerId") || sessionStorage.getItem("playerId");
+    setPlayerId(storedPlayerId);
   }, []);
 
-  // const { state } = useLocation();
   const state = localStorage.getItem("selectedTeamId");
 
+  const getInitials = (name) => {
+    if (!name) return "";
+    const words = name.trim().split(" ");
+    if (words.length === 1) return words[0][0].toUpperCase();
+    return (words[0][0] + words[1][0]).toUpperCase();
+  };
 
   /* ---------- SOCKET ---------- */
   useEffect(() => {
@@ -696,8 +698,7 @@ const BiddingPanel = () => {
         console.log("📩 UPDATE", data);
         handleSocketData(data);
       },
-      onDisconnect: (reason) =>
-        console.log("Socket disconnected:", reason),
+      onDisconnect: (reason) => console.log("Socket disconnected:", reason),
       onError: (err) => console.error("Socket error:", err),
     });
 
@@ -713,22 +714,18 @@ const BiddingPanel = () => {
   useEffect(() => {
     axios
       .get(
-        `/webSiteApi/auction/getAllPlayersAdmin/${auctionId}?teamId=${state}`
+        `/webSiteApi/auction/getAllPlayersAdmin/${auctionId}?teamId=${state}`,
       )
       .then((res) => {
         const data = res.data?.data?.data || [];
+        console.log(data,"pp")
         setPurchasedPlayers(data);
       })
       .catch((err) => console.error(err));
-  }, [auctionId, state]);
+  }, [auctionId,selectedTeam]);
 
-  const remainingBudget = selectedTeam?.teamAuctionDetails?.remainingBudget || 0;
-  const canBid = bidAmount && bidAmount <= remainingBudget && bidAmount > 0;
-  // Projected remaining budget: subtract the current player's current bid (use 0 if no currentBid)
-  const projectedRemaining= selectedTeam && currentPlayer
-    ? (selectedTeam.teamAuctionDetails?.remainingBudget || 0) - (currentPlayer.currentBid ?? 0)
-    : null;
-
+  const remainingBudget =
+    selectedTeam?.teamAuctionDetails?.remainingBudget || 0;
 
   /* ---------- SOCKET DATA HANDLER ---------- */
   const handleSocketData = (data) => {
@@ -745,13 +742,10 @@ const BiddingPanel = () => {
       if (!val) return "";
       const d = new Date(val);
       if (isNaN(d.getTime())) return val;
-      const day = String(d.getDate()).padStart(2, "0");
-      const month = d.toLocaleString("en-IN", { month: "short" });
-      const year = d.getFullYear();
       const hours = String(d.getHours()).padStart(2, "0");
       const mins = String(d.getMinutes()).padStart(2, "0");
       const secs = String(d.getSeconds()).padStart(2, "0");
-      return `${day} ${month} ${year}, ${hours}:${mins}:${secs}`;
+      return `${hours}:${mins}:${secs}`;
     };
 
     const normalized = bh
@@ -762,23 +756,21 @@ const BiddingPanel = () => {
         time: formatBidTime(b.bidTime || b.createdAt || b.time),
       }))
       .sort((a, c) => c.amount - a.amount)
-      .slice(0, 10);
+      .slice(0, 12);
 
     setBidHistory(normalized);
 
     if (selectedTeam?.teamId) {
       const teamBidData = normalized.find(
-        (b) => String(b.teamId) === String(selectedTeam.teamId)
+        (b) => String(b.teamId) === String(selectedTeam.teamId),
       );
       if (teamBidData) {
         setTeamBiddingData({
           lastBidAmount: teamBidData.amount,
           lastBidTime: teamBidData.time,
           isCurrentBidder:
-            String(player.highestBidder) ===
-            String(selectedTeam.teamId),
-          isHighestBidder:
-            normalized[0]?.teamId === selectedTeam.teamId,
+            String(player.highestBidder) === String(selectedTeam.teamId),
+          isHighestBidder: normalized[0]?.teamId === selectedTeam.teamId,
         });
       } else {
         setTeamBiddingData(null);
@@ -787,9 +779,9 @@ const BiddingPanel = () => {
 
     const increment = player.biddingIncrement || BID_STEP;
     setBidAmount(
-      player.currentBid
-        ? player.currentBid + increment
-        : player.basePrice + increment
+      player.currentBid === 0 
+        ? player.basePrice
+        : player.currentBid + increment,
     );
   };
 
@@ -801,14 +793,13 @@ const BiddingPanel = () => {
       try {
         setLoading(true);
         const response = await axios.get(
-          `/webSiteApi/auctionTeam/getTeamsByOwnerInAuction/${auctionId}?playerId=${playerId}`
+          `/webSiteApi/auctionTeam/getTeamsByOwnerInAuction/${auctionId}?playerId=${playerId}`,
         );
         const teamData = response.data?.data?.data || [];
         setTeams(teamData);
         if (teamData.length > 0) setSelectedTeam(teamData[0]);
-        setError(null);
       } catch {
-        setError("Failed to load teams");
+        toast.error("Failed to load teams");
       } finally {
         setLoading(false);
       }
@@ -821,7 +812,7 @@ const BiddingPanel = () => {
   useEffect(() => {
     if (selectedTeam?.teamId && bidHistory.length > 0) {
       const teamBidData = bidHistory.find(
-        (b) => String(b.teamId) === String(selectedTeam.teamId)
+        (b) => String(b.teamId) === String(selectedTeam.teamId),
       );
       if (teamBidData) {
         setTeamBiddingData({
@@ -829,10 +820,8 @@ const BiddingPanel = () => {
           lastBidTime: teamBidData.time,
           isCurrentBidder:
             currentPlayer &&
-            String(currentPlayer.highestBidder) ===
-              String(selectedTeam.teamId),
-          isHighestBidder:
-            bidHistory[0]?.teamId === selectedTeam.teamId,
+            String(currentPlayer.highestBidder) === String(selectedTeam.teamId),
+          isHighestBidder: bidHistory[0]?.teamId === selectedTeam.teamId,
         });
       } else {
         setTeamBiddingData(null);
@@ -857,8 +846,7 @@ const BiddingPanel = () => {
 
     const increment = currentPlayer.biddingIncrement || BID_STEP;
     const minBid =
-      (currentPlayer.currentBid || currentPlayer.basePrice) +
-      increment;
+      (currentPlayer.currentBid || currentPlayer.basePrice) ;
 
     if (bidAmount < minBid) {
       toast.error(`Minimum bid is ₹${formatMoney(minBid)}`);
@@ -867,377 +855,442 @@ const BiddingPanel = () => {
 
     try {
       setBidding(true);
-      await axios.post(
-        `/webSiteApi/auction/placeBid/${auctionId}`,
-        {
-          playerId: currentPlayer.playerId,
-          teamId: selectedTeam.teamId,
-          bidAmount,
-        }
-      );
+      await axios.post(`/webSiteApi/auction/placeBid/${auctionId}`, {
+        playerId: currentPlayer.playerId,
+        teamId: selectedTeam.teamId,
+        bidAmount,
+      });
       toast.success("Bid placed successfully!");
     } catch (err) {
-      toast.error(
-        err?.response?.data?.message || "Failed to place bid"
-      );
+      toast.error(err?.response?.data?.message || "Failed to place bid");
     } finally {
       setBidding(false);
     }
   };
 
-  /* ---------- LOADING / ERROR ---------- */
+
+  /* ---------- LOADING ---------- */
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-950">
-        <div className="text-slate-400">Loading teams...</div>
+      <div className="flex items-center justify-center h-screen bg-gray-950">
+        <div className="text-gray-400">Loading auction dashboard...</div>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-slate-950">
-        <div className="text-red-400">{error}</div>
-      </div>
-    );
-  }
   return (
-    <div className="w-screen min-h-screen overflow-y-auto bg-gradient-to-br from-indigo-950 via-slate-950 to-slate-900 p-4 " style={{ marginRight: "10px" }}>
-      <div className="w-full mx-auto">
-        {/* Premium Header */}
-        <div className="mb-8 relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-emerald-500/20 rounded-2xl blur-xl"></div>
-
-        </div>
-        <div className="space-y-2">
+    <div className="min-h-screen bg-gray-950 text-gray-100 p-4">
+      {/* Compact Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
           {selectedTeam && (
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-emerald-500/20 rounded-2xl blur-xl"></div>
-              <div className="relative bg-gradient-to-r from-indigo-900/50 to-emerald-900/30 border border-indigo-400/30 rounded-2xl p-2 flex items-center gap-6">
-                <img src={selectedTeam.teamLogo} alt={selectedTeam.teamName} className="w-20 h-20 rounded-full border-3 border-indigo-400/50" />
-                <div className="flex-1">
-                  <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-emerald-300">
-                    {selectedTeam.teamName.toUpperCase()}
-                  </h2>
-                  <p className="text-indigo-200/70 text-lg">{selectedTeam.teamCode}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {teams.length > 1 && (
-            <div className="bg-gradient-to-r from-slate-900/80 to-slate-950/80 border border-indigo-500/30 rounded-2xl p-4">
-              <p className="text-sm text-indigo-300/70 mb-3 font-semibold">SWITCH TEAM</p>
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {teams.map((team) => (
-                  <button
-                    key={team.teamId}
-                    onClick={() => setSelectedTeam(team)}
-                    className={`flex-shrink-0 px-4 py-2 rounded-lg transition-all ${selectedTeam?.teamId === team.teamId
-                      ? 'bg-indigo-500/30 border border-indigo-400 text-indigo-100'
-                      : 'bg-slate-800/40 border border-slate-700/50 text-slate-300 hover:border-indigo-500/50'
-                      }`}
-                  >
-                    {team.teamName}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 pr-4 pt-4">
-            <div className="space-y-6 lg:col-span-2">
+            <>
+              <img
+                src={selectedTeam.teamLogo}
+                alt={selectedTeam.teamName}
+                className="w-12 h-12 rounded-lg border-2 border-indigo-500/50"
+              />
               <div>
-                {currentPlayer ? (
-                  <div className="bg-gradient-to-br from-slate-800/60 via-slate-800/50 to-indigo-700/40 border border-indigo-400/40
- rounded-2xl p-4 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/20 rounded-full blur-3xl -z-10"></div>
+                <h1 className="text-xl font-bold text-white">
+                  {selectedTeam.teamName}
+                </h1>
+                <p className="text-sm text-gray-400">
+                  {selectedTeam.teamCode} • Auction 
+                </p>
+              </div>
+            </>
+          )}
+        </div>
 
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-1 h-5 bg-gradient-to-b from-indigo-400 to-emerald-400 rounded"></div>
-                      <h3 className="text-sm font-bold text-slate-50">👤 PLAYER</h3>
+        {/* Team Switcher */}
+        {teams.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto">
+            {teams.map((team) => (
+              <button
+                key={team.teamId}
+                onClick={() => setSelectedTeam(team)}
+                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                  selectedTeam?.teamId === team.teamId
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                }`}
+              >
+                {team.teamName}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Main Dashboard Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Left Column - Player & Bidding */}
+        <div className="lg:col-span-8 space-y-4">
+          {/* Current Player Card */}
+          <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+            <div className="p-4 border-b border-gray-800">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <span className="w-2 h-5 bg-indigo-500 rounded"></span>
+                Current Player
+              </h2>
+            </div>
+            
+            {currentPlayer ? (
+              <div className="p-2">
+                <div className="flex items-start gap-2">
+                  {/* Player Image/Initials */}
+                  <div className="relative">
+                    {currentPlayer.profilePicture &&
+                    currentPlayer.profilePicture !== dummyImage ? (
+                      <img
+                        src={currentPlayer.profilePicture}
+                        alt={currentPlayer.name}
+                        className="w-20 h-20 rounded-lg object-cover border-2 border-indigo-500/50"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+                        {getInitials(currentPlayer.name)}
+                      </div>
+                    )}
+                    
+                    {/* Sold/Unsold Badge */}
+                    {currentPlayer.status === "sold" && (
+                      <div className="absolute -top-2 -right-2 px-2 py-1 bg-green-600 text-white text-xs font-bold rounded-md rotate-6">
+                        SOLD
+                      </div>
+                    )}
+                    {currentPlayer.status === "unsold" && (
+                      <div className="absolute -top-2 -right-2 px-2 py-1 bg-red-600 text-white text-xs font-bold rounded-md rotate-6">
+                        UNSOLD
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Player Details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-4 mb-3">
+                      <h3 className="text-xl font-bold text-white truncate">
+                        {currentPlayer.name}
+                      </h3>
+                      <span className="px-3 py-1 bg-gray-800 text-indigo-300 text-sm rounded-full">
+                        {currentPlayer.categoryName}
+                      </span>
                     </div>
-
-                    <div className="flex gap-3">
-                      {currentPlayer.profilePicture && (
-                        <div className="relative flex-shrink-0 w-16 h-16">
-                          {currentPlayer.profilePicture &&
-                            currentPlayer.profilePicture !== dummyImage ? (
-                            <img
-                              src={currentPlayer.profilePicture}
-                              alt={currentPlayer.name}
-                              className="w-16 h-16 rounded-lg object-cover border-2 border-indigo-400/50"
-                            />
-                          ) : (
-                            <div className="w-16 h-16 rounded-lg bg-indigo-500 flex items-center justify-center
-                    text-white text-xl font-bold border-2 border-indigo-400/50">
-                              {getInitials(currentPlayer.name)}
-                            </div>
-                          )}
-                          <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-indigo-400/20 to-transparent pointer-events-none"></div>
-                          {currentPlayer.status === "sold" && (
-                            <div
-                              className="
-        absolute inset-0
-        z-20
-        flex items-center justify-center
-        pointer-events-none
-      "
-                            >
-                              <div className="
-        w-[72px] h-[75px]
-        bg-green-600/80
-        text-white font-bold text-[11px]
-        rounded-xl
-        rotate-[-15deg]
-        flex items-center justify-center
-        shadow-xl
-      ">
-                                SOLD
-                              </div>
-                            </div>
-                          )}
-
-                          {currentPlayer.status === "unsold" && (
-                            <div
-                              className="
-        absolute inset-0
-        z-20
-        flex items-center justify-center
-        pointer-events-none
-      "
-                            >
-                              <div className="
-        w-[72px] h-[75px]
-        bg-red-600/80
-        text-white font-bold text-[11px]
-        rounded-xl
-        rotate-[-15deg]
-        flex items-center justify-center
-        shadow-xl
-      ">
-                                UNSOLD
-                              </div>
-                            </div>
-                          )}
-
-                        </div>
-
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-50 to-slate-200 truncate">
-                          {currentPlayer.name}
-                        </h4>
-                        <p className="text-indigo-300/80 font-semibold text-xs mb-1">{currentPlayer.categoryName}</p>
-                        {currentPlayer.batchId && (
-                          <p className="text-xs text-indigo-300/60 mb-2">ID: {currentPlayer.batchId}</p>
-                        )}
-                        <div className="grid grid-cols-2 gap-1">
-                          <div className="bg-slate-800/50 rounded p-1.5 border border-slate-700/50">
-                            <p className="text-xs text-indigo-300/70 font-semibold">BASE</p>
-                            <p className="text-xs font-bold text-emerald-400">
-                              ₹{formatMoney(currentPlayer.basePrice)}
-                            </p>
-                          </div>
-                          <div className="bg-slate-800/50 rounded p-1.5 border border-slate-700/50">
-                            <p className="text-xs text-indigo-300/70 font-semibold">BID</p>
-                            <p className="text-xs font-bold text-indigo-400">
-                              ₹{formatMoney(currentPlayer.currentBid || currentPlayer.basePrice)}
-                            </p>
-                          </div>
-                        </div>
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-gray-800/50 rounded-lg p-3 flex items-center justify-between">
+                        <p className="text-sm text-gray-400 mb-1">Base Price</p>
+                        <p className="text-lg font-bold text-emerald-400">
+                          ₹{formatMoney(currentPlayer.basePrice)}
+                        </p>
+                      </div>
+                      <div className="bg-gray-800/50 rounded-lg p-3 flex items-center justify-between">
+                        <p className="text-sm text-gray-400 mb-1">Current Bid</p>
+                        <p className="text-lg font-bold text-indigo-400">
+                          ₹{formatMoney(currentPlayer.currentBid || currentPlayer.basePrice)}
+                        </p>
+                      </div>
+                      <div className="bg-gray-800/50 rounded-lg p-3 flex items-center justify-between">
+                        <p className="text-sm text-gray-400 mb-1">Increment</p>
+                        <p className="text-lg font-bold text-purple-400">
+                          ₹{formatMoney(currentPlayer.biddingIncrement || BID_STEP)}
+                        </p>
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4 text-center">
-                    <p className="text-2xl mb-1">⏳</p>
-                    <p className="text-slate-400 text-xs">Waiting for player...</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Live Status - Below Player */}
-              {selectedTeam && currentPlayer && (
-                <div className="bg-gradient-to-br from-slate-800/60 via-slate-800/50 to-indigo-700/40 border border-indigo-400/40
- rounded-2xl p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-1 h-5 bg-gradient-to-b from-indigo-400 to-emerald-400 rounded"></div>
-                    <h3 className="text-sm font-bold text-slate-50">⚡ LIVE STATUS</h3>
-                  </div>
-                  {teamBiddingData ? (
-                    <div className="space-y-2">
-                      {teamBiddingData.isHighestBidder && (
-                        <div className="bg-gradient-to-r from-emerald-500/30 to-emerald-600/20 border border-emerald-500/50 rounded-lg p-3 animate-pulse">
-                          <p className="text-emerald-300 font-bold flex items-center gap-2 text-xs">
-                            <span className="text-lg">👑</span> HIGHEST BIDDER!
-                          </p>
-                        </div>
-                      )}
-
-                      {teamBiddingData.isCurrentBidder && !teamBiddingData.isHighestBidder && (
-                        <div className="bg-gradient-to-r from-amber-500/30 to-amber-600/20 border border-amber-500/50 rounded-lg p-3">
-                          <p className="text-amber-300 font-bold flex items-center gap-2 text-xs">
-                            <span className="text-lg">⏳</span> OUTBID
-                          </p>
-                        </div>
-                      )}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-gradient-to-br from-emerald-900/30 to-emerald-900/10 border border-emerald-500/30 rounded p-2">
-                          <p className="text-xs text-emerald-300/70 font-semibold">LAST BID</p>
-                          <p className="text-sm font-black text-emerald-300">
-                            ₹{formatMoney(teamBiddingData.lastBidAmount)}
-                          </p>
-                        </div>
-                        <div className="bg-gradient-to-br from-indigo-900/30 to-indigo-900/10 border border-indigo-500/30 rounded p-2">
-                          <p className="text-xs text-indigo-300/70 font-semibold">TIME</p>
-                          <p className="text-xs text-indigo-200 font-mono">{teamBiddingData.lastBidTime}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-slate-800/50 rounded p-3 text-center">
-                      <p className="text-slate-400 text-xs">No bids yet</p>
-                    </div>
-                  )}
                 </div>
-              )}
 
-              <div>
-                {currentPlayer && selectedTeam && currentPlayer.status === "bidding" && (
-                  <div className="bg-gradient-to-br from-slate-800/60 via-slate-800/50 to-indigo-700/40 border border-indigo-400/40
- rounded-2xl p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-1 h-5 bg-gradient-to-b from-indigo-400 to-emerald-400 rounded"></div>
-                      <h3 className="text-sm font-bold text-slate-50">PLACE BID</h3>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="bg-slate-800/50 p-3 rounded-lg">
-                        <p className="text-xs text-indigo-300/70 font-semibold mb-1">NEXT BID</p>
-                        <p className="text-2xl font-black text-indigo-400">
+                {/* Bidding Actions */}
+                {currentPlayer.status === "bidding" && selectedTeam && (
+                  <div className="mt-3 p-2 bg-gray-800/50 rounded-lg">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="flex-1 flex justify-between">
+                        <p className="text-xl text-gray-400 mb-1">Next Bid Amount</p>
+                        <p className="text-xl font-bold text-white">
                           ₹{formatMoney(bidAmount)}
                         </p>
                       </div>
-                      <button
-                        onClick={handlePlaceBid}
-                        disabled={!canBid || bidding}
-                        className={`w-full py-2 rounded-lg font-bold text-xs transition-all duration-300 ${canBid && !bidding
-                          ? 'bg-gradient-to-r from-indigo-500 to-emerald-500 text-slate-950 hover:from-indigo-600 hover:to-emerald-600 shadow-md shadow-indigo-500/50'
-                          : 'bg-slate-700/50 text-slate-400 cursor-not-allowed'
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={handlePlaceBid}
+                          disabled={bidding || bidAmount > remainingBudget}
+                          className={`px-8 py-3 rounded-lg font-bold text-lg transition-all ${
+                            bidAmount <= remainingBudget && !bidding
+                              ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                              : "bg-gray-700 text-gray-400 cursor-not-allowed"
                           }`}
-                      >
-                        {bidding ? '⏳ PLACING...' : '🎯 BID'}
-                      </button>
+                        >
+                          {bidding ? "Placing..." : "Place Bid"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
-
-              <div className="bg-gradient-to-br from-slate-800/60 via-slate-800/50 to-indigo-700/40 border border-indigo-400/40
- rounded-2xl p-4 w-[152%]" style={{ marginTop: "0px" }}>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-1 h-5 bg-gradient-to-b from-indigo-400 to-emerald-400 rounded"></div>
-                  <h3 className="text-sm font-bold text-slate-50">🧾 PURCHASED PLAYERS</h3>
-                </div>
-
-                {purchasedPlayers.length === 0 ? (
-                  <p className="text-slate-400 text-xs">No purchased players</p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-                    {purchasedPlayers.map((p, i) => (
-                      <PurchasedPlayerCard key={i} player={p} />
-                    ))}
-                  </div>
-                )}
+            ) : (
+              <div className="p-8 text-center">
+                <p className="text-gray-500">Waiting for next player...</p>
               </div>
-            </div>
+            )}
+          </div>
 
-            <div className="space-y-6 lg:col-span-1">
-              <div>
-                {selectedTeam && (
-                  <div className="bg-gradient-to-br from-slate-800/60 via-slate-800/50 to-indigo-700/40 border border-indigo-400/40
- rounded-2xl p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-1 h-5 bg-gradient-to-b from-emerald-400 to-teal-400 rounded"></div>
-                      <h3 className="text-sm font-bold text-slate-50">💰 BUDGET</h3>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="bg-gradient-to-br from-emerald-900/30 to-emerald-900/10 border border-emerald-500/30 rounded p-2">
-                        <p className="text-xs text-emerald-300/70 font-semibold">INITIAL</p>
-                        <p className="text-sm font-black text-emerald-300">
-                          ₹{(selectedTeam.teamAuctionDetails.initialBudget)}
-                        </p>
-                      </div>
-                      <div className={`bg-gradient-to-br border rounded p-2 ${remainingBudget > 0
-                        ? 'from-teal-900/30 to-teal-900/10 border-teal-500/30'
-                        : 'from-red-900/30 to-red-900/10 border-red-500/30'
-                        }`}>
-                        <p className={`text-xs font-semibold ${remainingBudget > 0 ? 'text-teal-300/70' : 'text-red-300/70'}`}>REMAINING</p>
-                        <p className={`text-sm font-black ${remainingBudget > 0 ? 'text-teal-300' : 'text-red-300'}`}>
-                          ₹{(selectedTeam.teamAuctionDetails.remainingBudget)}
-                        </p>
-                      </div>
-                      <div className="bg-gradient-to-br from-indigo-900/30 to-indigo-900/10 border border-indigo-500/30 rounded p-2">
-                        <p className="text-xs text-indigo-300/70 font-semibold">SPENT</p>
-                        <p className="text-sm font-black text-indigo-300">
-                          ₹{formatMoney(selectedTeam.teamAuctionDetails.purseSpent)}
-                        </p>
-                      </div>
-                      <div className="bg-gradient-to-br from-violet-900/30 to-violet-900/10 border border-violet-500/30 rounded p-2">
-                        <p className="text-xs text-violet-300/70 font-semibold">SQUAD</p>
-                        <p className="text-sm font-black text-violet-300">
-                          {selectedTeam.teamAuctionDetails.currentSquadSize} / {selectedTeam.teamAuctionDetails.maxPlayers}
-                        </p>
-                      </div>
-                      {/* <div className="bg-gradient-to-br from-violet-900/30 to-violet-900/10 border border-violet-500/30 rounded p-2">
-                        <p className="text-xs text-violet-300/70 font-semibold">If wins</p>
-                        <p className="text-sm font-black text-violet-300">
-                          {selectedTeam.teamAuctionDetails.currentSquadSize} / {selectedTeam.teamAuctionDetails.maxPlayers}
-                        </p>
-                      </div> */}
-                    </div>
-                  </div>
-                )}
-
+          {/* Bid History & Purchased Players Tabs */}
+          <div className="bg-gray-900 rounded-xl border border-gray-800">
+            <div className="border-b border-gray-800">
+              <div className="flex">
+                <button
+                  onClick={() => setActiveTab("overview")}
+                  className={`px-6 py-3 text-sm font-medium ${activeTab === "overview" ? "text-white border-b-2 border-indigo-500" : "text-gray-400 hover:text-gray-300"}`}
+                >
+                  Bid History
+                </button>
+                <button
+                  onClick={() => setActiveTab("purchased")}
+                  className={`px-6 py-3 text-sm font-medium ${activeTab === "purchased" ? "text-white border-b-2 border-indigo-500" : "text-gray-400 hover:text-gray-300"}`}
+                >
+                  Purchased Players ({purchasedPlayers.length})
+                </button>
               </div>
             </div>
-
-            <div className="lg:col-span-1">
-              <div className="bg-gradient-to-br from-slate-800/60 via-slate-800/50 to-indigo-700/40 border border-indigo-400/40
- rounded-2xl p-6 h-full flex flex-col ">
-                <div className="flex items-center gap-2 mb-4 ">
-                  <div className="w-1 h-6 bg-gradient-to-b from-purple-400 to-indigo-400 rounded"></div>
-                  <h3 className="text-lg font-bold text-slate-50">📋 HISTORY</h3>
-                </div>
-                <div className="flex-1 overflow-y-auto space-y-2">
+            
+            <div className="p-4">
+              {activeTab === "overview" ? (
+                <div className="space-y-2 max-h-80 overflow-y-auto">
                   {bidHistory.length === 0 ? (
-                    <div className="text-slate-400 text-sm text-center py-12">
-                      <p className="text-3xl mb-2">📋</p>
-                      <p>No bids yet</p>
-                    </div>
+                    <p className="text-gray-500 text-center py-8">No bids yet</p>
                   ) : (
                     bidHistory.map((bid, idx) => (
-                      <div key={idx} className={`flex justify-between items-center rounded-lg p-3 transition-all text-sm ${idx === 0
-                        ? 'bg-gradient-to-r from-amber-500/30 to-amber-600/20 border border-amber-500/50 shadow-lg shadow-amber-500/20 sticky top-0'
-                        : 'bg-slate-800/40 border border-slate-700/50 hover:bg-slate-800/60'
-                        }`}>
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          {idx === 0 && (
-                            <span className="text-amber-400 font-black text-lg">★</span>
-                          )}
-                          <span className={`font-bold truncate ${idx === 0 ? 'text-amber-100' : 'text-slate-200'}`}>
-                            {bid.teamName}
-                          </span>
+                      <div
+                        key={idx}
+                        className={`flex items-center justify-between p-3 rounded-lg ${
+                          idx === 0
+                            ? "bg-gradient-to-r from-amber-900/30 to-amber-800/20 border border-amber-500/30"
+                            : idx % 2 === 0
+                            ? "bg-gray-800/30"
+                            : "bg-gray-800/10"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 flex items-center justify-center rounded-full ${
+                            idx === 0 ? "bg-amber-500/20" : "bg-gray-700"
+                          }`}>
+                            <span className={`font-bold ${idx === 0 ? "text-amber-400" : "text-gray-400"}`}>
+                              {idx + 1}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{bid.teamName}</p>
+                            <p className="text-xs text-gray-500">{bid.time}</p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-                          <span className={`font-black ${idx === 0 ? 'text-amber-300' : 'text-emerald-400'}`}>
+                        <div className="text-right">
+                          <p className="font-bold text-lg">
                             ₹{formatMoney(bid.amount)}
-                          </span>
+                          </p>
+                          {idx === 0 && (
+                            <p className="text-xs text-amber-400 font-semibold">Highest</p>
+                          )}
                         </div>
                       </div>
                     ))
                   )}
                 </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {purchasedPlayers.map((player, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50 hover:border-indigo-500/50 transition-colors"
+                    >
+                      <div className="flex items-start gap-2">
+                        {player?.player?.profilePicture && player?.player?.profilePicture !== dummyImage ? (
+                          <img
+                            src={player?.player?.profilePicture}
+                            alt={player?.player?.name}
+                            className="w-12 h-12 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-indigo-600/20 flex items-center justify-center text-white">
+                            {getInitials(player?.player?.name)}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{player?.player?.name}</p>
+                          <p className="text-xs text-gray-400">{player?.player?.categoryName}</p>
+                          <p className="text-sm font-bold text-emerald-400 mt-1">
+                            ₹{formatMoney(player?.finalPrice || player?.basePrice)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column - Team Info & Status */}
+        <div className="lg:col-span-4 space-y-4">
+          {/* Team Budget Card */}
+          <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <span className="w-2 h-5 bg-emerald-500 rounded"></span>
+              Team Budget
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm text-gray-400">Remaining Budget</span>
+                  <span className={`text-lg font-bold ${
+                    remainingBudget > 0 ? "text-emerald-400" : "text-red-400"
+                  }`}>
+                    ₹{formatMoney(remainingBudget)}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-800 rounded-full h-2">
+                  <div 
+                    className={`h-full rounded-full ${
+                      remainingBudget > 0 ? "bg-emerald-500" : "bg-red-500"
+                    }`}
+                    style={{ 
+                      width: `${Math.min(100, (remainingBudget / (selectedTeam?.teamAuctionDetails?.initialBudget || 1)) * 100)}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gray-800/50 rounded-lg p-3">
+                  <p className="text-xs text-gray-400">Initial</p>
+                  <p className="text-sm font-bold text-white">
+                    ₹{formatMoney(selectedTeam?.teamAuctionDetails?.initialBudget)}
+                  </p>
+                </div>
+                <div className="bg-gray-800/50 rounded-lg p-3">
+                  <p className="text-xs text-gray-400">Spent</p>
+                  <p className="text-sm font-bold text-white">
+                    ₹{formatMoney(selectedTeam?.teamAuctionDetails?.purseSpent)}
+                  </p>
+                </div>
+                <div className="bg-gray-800/50 rounded-lg p-3">
+                  <p className="text-xs text-gray-400">Squad Size</p>
+                  <p className="text-sm font-bold text-white">
+                    {selectedTeam?.teamAuctionDetails?.currentSquadSize} / {selectedTeam?.teamAuctionDetails?.maxPlayers}
+                  </p>
+                </div>
+                <div className="bg-gray-800/50 rounded-lg p-3">
+                  <p className="text-xs text-gray-400">Avg. Price</p>
+                  <p className="text-sm font-bold text-white">
+                    {selectedTeam?.teamAuctionDetails?.currentSquadSize > 0
+                      ? `₹${formatMoney(selectedTeam?.teamAuctionDetails?.purseSpent / selectedTeam?.teamAuctionDetails?.currentSquadSize)}`
+                      : "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bidding Status */}
+          {selectedTeam && currentPlayer && (
+            <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <span className="w-2 h-5 bg-amber-500 rounded"></span>
+                Bidding Status
+              </h3>
+              
+              {teamBiddingData ? (
+                <div className="space-y-4">
+                  {teamBiddingData.isHighestBidder && (
+                    <div className="bg-gradient-to-r from-emerald-900/30 to-emerald-800/20 border border-emerald-500/30 rounded-lg p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                          <span className="text-2xl">👑</span>
+                        </div>
+                        <div>
+                          <p className="font-bold text-emerald-300">Highest Bidder!</p>
+                          <p className="text-sm text-emerald-300/70">You're in the lead</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {teamBiddingData.isCurrentBidder && !teamBiddingData.isHighestBidder && (
+                    <div className="bg-gradient-to-r from-amber-900/30 to-amber-800/20 border border-amber-500/30 rounded-lg p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                          <span className="text-2xl">⚡</span>
+                        </div>
+                        <div>
+                          <p className="font-bold text-amber-300">Outbid!</p>
+                          <p className="text-sm text-amber-300/70">Increase your bid</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-400">Your Last Bid</span>
+                      <span className="font-bold text-lg text-white">
+                        ₹{formatMoney(teamBiddingData.lastBidAmount)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-400">Bid Time</span>
+                      <span className="font-mono text-sm text-gray-300">
+                        {teamBiddingData.lastBidTime}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-3">
+                    <span className="text-2xl">📋</span>
+                  </div>
+                  <p className="text-gray-500">No bids placed yet</p>
+                  <p className="text-sm text-gray-600 mt-1">Be the first to bid!</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Quick Stats */}
+          <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <span className="w-2 h-5 bg-purple-500 rounded"></span>
+              Auction Stats
+            </h3>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-gray-800/50 rounded-lg p-3">
+                <p className="text-xs text-gray-400">Next Bid</p>
+                <p className="text-sm font-bold text-white">
+                  ₹{formatMoney(
+                    currentPlayer 
+                      ? (currentPlayer.currentBid || currentPlayer.basePrice) + 
+                        (currentPlayer.biddingIncrement || BID_STEP)
+                      : 0
+                  )}
+                </p>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-3">
+                <p className="text-xs text-gray-400">Bids Today</p>
+                <p className="text-sm font-bold text-white">{bidHistory.length}</p>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-3">
+                <p className="text-xs text-gray-400">Active Teams</p>
+                <p className="text-sm font-bold text-white">
+                  {[...new Set(bidHistory.map(b => b.teamId))].length}
+                </p>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-3">
+                <p className="text-xs text-gray-400">Status</p>
+                <p className="text-sm font-bold text-white">
+                  {currentPlayer?.status || "Waiting"}
+                </p>
               </div>
             </div>
           </div>
@@ -1248,4 +1301,3 @@ const BiddingPanel = () => {
 };
 
 export default BiddingPanel;
-

@@ -170,7 +170,6 @@
 //     onConfirm: () => { },
 //   });
 
-
 //   // ---- Fetch categories from API ----
 //   useEffect(() => {
 //     if (!auctionId) return;
@@ -283,7 +282,6 @@
 //     };
 //   }, [auctionId]);
 
-
 //   const currentPlayer: SocketPlayer | null = socketData?.currentPlayer ?? null;
 
 //   const [hasSelectedCategory, setHasSelectedCategory] = useState(false);
@@ -386,7 +384,6 @@
 //     fetchCounts();
 //   }, [fetchCounts]);
 
-
 //   // ---- TIMER EFFECT ----
 //   useEffect(() => {
 //     // timer should run only while auction is locally "started"
@@ -434,8 +431,6 @@
 //     });
 //   };
 
-
-
 //   const handleStatusChange = (value: string) => {
 //     setSelectedStatus(value as "available" | "unsold");
 //   };
@@ -476,7 +471,6 @@
 //     }
 //   };
 
-
 //   //   const getNextBidPrice = (): number | null => {
 //   //     if (!currentPlayer) return null;
 //   //     const base = currentBid ?? currentPlayer.basePrice;
@@ -490,7 +484,6 @@
 //       (currentPlayer.categoryBiddingIncrement || BID_STEP)
 //     );
 //   };
-
 
 //   // ---- SOCKET BID / TEAM SELECT ----
 
@@ -519,7 +512,6 @@
 //       toast.error(err.response?.data?.message || "Failed to place bid");
 //     }
 //   };
-
 
 //   const canMarkDecision =
 //     !!currentPlayer && currentPlayer.status === "bidding";
@@ -817,7 +809,6 @@
 //     });
 //   };
 
-
 import axios from "axios";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
@@ -849,7 +840,8 @@ const formatBidTime = (val) => {
 const formatMoney = (amount) => {
   if (!amount || isNaN(amount)) return "0";
 
-  if (amount >= 10000000) return `${parseFloat((amount / 10000000).toFixed(2))}Cr`;
+  if (amount >= 10000000)
+    return `${parseFloat((amount / 10000000).toFixed(2))}Cr`;
   if (amount >= 100000) return `${parseFloat((amount / 100000).toFixed(2))}L`;
   if (amount >= 1000) return `${parseFloat((amount / 1000).toFixed(1))}k`;
 
@@ -890,6 +882,7 @@ const AdminAuctionControl = () => {
   const [teams, setTeams] = useState([]);
 
   const [teamSearch, setTeamSearch] = useState("");
+  const [hasSelectedCategory, setHasSelectedCategory] = useState(false);
 
   const [confirmState, setConfirmState] = useState({
     open: false,
@@ -928,6 +921,7 @@ const AdminAuctionControl = () => {
 
   const handleSocketData = useCallback((data) => {
     const payload = data?.data || data;
+    console.log("Socket payload received:", payload);
 
     setSocketData(payload);
     setTeams(payload?.teams || []);
@@ -981,9 +975,102 @@ const AdminAuctionControl = () => {
   }, []);
 
   /* ---------- CONNECT SOCKET ---------- */
+  const resetLocalAuctionState = () => {
+    setAuctionStarted(false);
+    setIsPaused(false);
+    setDecisionPending(false);
+    setAuctionEnded(false);
+    setTimeLeft(30);
+    setCurrentBid(null);
+    setSelectedTeamId("");
+    setCurrentWinnerName(null);
+    setIsSold(null);
+  };
 
+  //   // ---- CATEGORY CHANGE -> load first player via callNext ----
+  const handleCategoryChange = (value) => {
+    if (!socketInstance || !auctionId) return;
 
-    const handlePlayPause = async () => {
+    setSelectedCategoryId(value);
+    setHasSelectedCategory(true);
+    resetLocalAuctionState();
+
+    socketInstance.emit("callNext", {
+      auctionId,
+      categoryId: value,
+      playerStatus: selectedStatus,
+    });
+  };
+
+  const handleNextPlayer = async () => {
+    if (!selectedCategoryId) {
+      toast.error("Please select a category first");
+      return;
+    }
+    if (!auctionId) return;
+
+    try {
+      const data = {
+        categoryId: selectedCategoryId,
+        playerStatus: selectedStatus,
+      };
+
+      await axios.post(`/webSiteApi/auction/callNext/${auctionId}`, data);
+      resetLocalAuctionState();
+    } catch (error) {
+      console.error("Next player error", error);
+    }
+  };
+
+  const handleStatusChange = (value) => {
+    setSelectedStatus(value);
+  };
+
+  // ---- START / PAUSE / RESUME ----
+  const handleStartAuction = async () => {
+    try {
+      const data = {
+        categoryId: selectedCategoryId,
+        playerStatus: selectedStatus,
+      };
+
+      await axios.post(`/webSiteApi/auction/start/${auctionId}`, data);
+
+      setAuctionStarted(true);
+      console.log("✅ Auction started");
+    } catch (error) {
+      console.error("Start auction error", error);
+    }
+  };
+
+  //   const handlePlayPause = async () => {
+  //     try {
+  //       if (socketData?.auctionStatus === "paused") {
+  //         await axios.post(`/webSiteApi/auction/resume/${auctionId}`);
+  //         return;
+  //       }
+
+  //       if (socketData?.auctionStatus === "ongoing") {
+  //         await axios.post(`/webSiteApi/auction/pause/${auctionId}`);
+  //         return;
+  //       }
+
+  //       handleStartAuction();
+  //     } catch (err) {
+  //       console.error("Pause/Resume failed:", err);
+  //     }
+  //   };
+  const getNextBidPrice = () => {
+    if (!currentPlayer) return null;
+    return (
+      (currentBid ?? currentPlayer.basePrice) +
+      (currentPlayer.categoryBiddingIncrement || BID_STEP)
+    );
+  };
+
+  const nextBidPrice = getNextBidPrice();
+
+  const handlePlayPause = async () => {
     try {
       if (socketData?.auctionStatus === "paused") {
         await axios.post(`/webSiteApi/auction/resume/${auctionId}`);
@@ -1000,6 +1087,7 @@ const AdminAuctionControl = () => {
       console.error("Pause/Resume failed:", err);
     }
   };
+
   useEffect(() => {
     if (!auctionId) return;
 
@@ -1021,6 +1109,62 @@ const AdminAuctionControl = () => {
 
   /* ---------- TIMER ---------- */
 
+  //   // ---- UNDO MARK (sold -> unsold) ----
+  const handleUndoMark = async () => {
+    if (!currentPlayer || !auctionId) return;
+
+    // Only allow undo mark when the current player is actually marked SOLD
+    if (currentPlayer.status !== "sold") {
+      toast.error(
+        "Undo mark is allowed only when the current player is marked SOLD"
+      );
+      return;
+    }
+
+    // const confirmUndo = window.confirm(
+    //   `Are you sure you want to undo the SOLD mark for ${currentPlayer.name}? This will move the player back to unsold.`
+    // );
+    // if (!confirmUndo) return;
+
+    try {
+      const resp = await axios.post(
+        `/webSiteApi/auction/undoMark/${auctionId}`,
+        { playerId: currentPlayer.playerId }
+      );
+
+      console.log("✅ Undo mark success", resp?.data);
+      // UI updates should arrive via socket; optionally refresh or update local state
+      setIsSold(false);
+      setDecisionPending(false);
+      setAuctionStarted(false);
+      // clear sold record if present
+      setSoldHistory((prev) =>
+        prev.filter((s) => s.playerId !== currentPlayer.playerId)
+      );
+    } catch (err) {
+      console.error("❌ Undo mark failed", err?.response?.data || err);
+      toast.error(err?.response?.data?.message || "Failed to undo sold mark");
+    }
+  };
+
+  const openUndoConfirm = () => {
+    if (!currentPlayer) {
+      toast.error("No player selected.");
+      return;
+    }
+
+    setConfirmState({
+      open: true,
+      title: "Undo Last Action",
+      danger: true, // undo destructive ho sakta hai
+      message: `Are you sure you want to undo the SOLD mark for ${currentPlayer.name}? This will move the player back to unsold.`,
+      onConfirm: async () => {
+        setConfirmState((p) => ({ ...p, open: false }));
+        await handleUndoMark(); // existing undo logic
+      },
+    });
+  };
+
   useEffect(() => {
     if (!auctionStarted || decisionPending || auctionEnded || isPaused) return;
 
@@ -1039,6 +1183,8 @@ const AdminAuctionControl = () => {
     return () => clearInterval(id);
   }, [auctionStarted, decisionPending, auctionEnded, isPaused]);
 
+  const canMarkDecision = !!currentPlayer && currentPlayer.status === "bidding";
+
   /* ---------- TEAM BID ---------- */
 
   const handleTeamBid = async (teamId) => {
@@ -1053,7 +1199,8 @@ const AdminAuctionControl = () => {
       await axios.post(`/webSiteApi/auction/placeBid/${auctionId}`, {
         playerId: currentPlayer.playerId,
         teamId,
-        bidAmount: currentBid + increment,
+        // bidAmount: currentBid + increment,
+        bidAmount: currentPlayer.currentBid === 0 ? currentPlayer.basePrice : currentPlayer.currentBid + increment,
       });
 
       setSelectedTeamId(teamId);
@@ -1099,6 +1246,86 @@ const AdminAuctionControl = () => {
     }
   };
 
+  const openSoldConfirm = () => {
+    if (!currentPlayer || !selectedTeamId || !currentBid) {
+      toast.error("No bid found to mark sold.");
+      return;
+    }
+
+    setConfirmState({
+      open: true,
+      title: "Confirm Sale",
+      danger: false, // SOLD positive action hai
+      message: `Are you sure you want to sell ${currentPlayer.name} to ${
+        teams.find((t) => t.teamId === selectedTeamId)?.teamName
+      } for ${formatMoney(currentBid)}?`,
+      onConfirm: async () => {
+        setConfirmState((p) => ({ ...p, open: false }));
+        await handleMarkSold(); // existing SOLD logic reuse
+      },
+    });
+  };
+
+  //   // ---- UNDO LAST BID ----
+  const handleUndoLastBid = async (teamId) => {
+    if (!currentPlayer || !auctionId) return;
+
+    // const confirmUndo = window.confirm(
+    //   `Are you sure you want to undo the last bid for ${currentPlayer.name}?`
+    // );
+    // if (!confirmUndo) return;
+
+    try {
+      const payload = { playerId: currentPlayer.playerId };
+      if (teamId) payload.teamId = teamId;
+
+      const resp = await axios.post(
+        `/webSiteApi/auction/undoLastBid/${auctionId}`,
+        payload
+      );
+
+      console.log("✅ Undo success", resp?.data);
+      // refresh local socket/read state will come from socket; optionally refetch auction
+      // you may want to clear selected team if it was the last bidder
+      if (teamId && selectedTeamId === teamId) setSelectedTeamId("");
+    } catch (err) {
+      console.error("❌ Undo last bid failed", err?.response?.data || err);
+      toast.error(err?.response?.data?.message || "Failed to undo last bid");
+    }
+  };
+
+  const openUnsoldConfirm = () => {
+    setConfirmState({
+      open: true,
+      danger: true,
+      message: `Are you sure you want to mark ${currentPlayer?.name} as UNSOLD?`,
+      onConfirm: async () => {
+        setConfirmState((p) => ({ ...p, open: false }));
+        await handleMarkUnsold();
+      },
+    });
+  };
+
+  const openUndoLastBidConfirm = () => {
+    if (!currentBid) {
+      toast.error("No bid available to undo.");
+      return;
+    }
+
+    setConfirmState({
+      open: true,
+      title: "Undo Last Bid",
+      danger: true, // bid undo destructive hai
+      message: `Are you sure you want to undo the last bid of ${formatMoney(
+        currentBid
+      )}?`,
+      onConfirm: async () => {
+        setConfirmState((p) => ({ ...p, open: false }));
+        await handleUndoLastBid(); // existing logic
+      },
+    });
+  };
+
   /* ---------- FILTER TEAMS ---------- */
 
   const filteredTeams = useMemo(() => {
@@ -1108,14 +1335,12 @@ const AdminAuctionControl = () => {
     );
   }, [teamSearch, teams]);
 
-
-    const buttonText =
+  const buttonText =
     auctionStatus === "paused"
       ? "Resume"
       : auctionStatus === "ongoing"
-        ? "Pause"
-        : "Start Auction";
-
+      ? "Pause"
+      : "Start Auction";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-50 px-4 py-6">
@@ -1132,7 +1357,9 @@ const AdminAuctionControl = () => {
           <div className="bg-slate-900/70 border border-slate-800 rounded-2xl px-5 py-4 shadow-sm shadow-blue-950">
             <span className="text-sm text-slate-400">Current Category</span>
             <div className="text-2xl font-bold">
-              {categories.find((c) => c.id === selectedCategoryId)?.name || currentPlayer?.categoryName || "-"}
+              {categories.find((c) => c.id === selectedCategoryId)?.name ||
+                currentPlayer?.categoryName ||
+                "-"}
             </div>
 
             <div className="mt-2 text-sm text-slate-400">
@@ -1144,19 +1371,27 @@ const AdminAuctionControl = () => {
                 <div className="flex gap-3 text-xs">
                   <div>
                     <div className="text-xs text-slate-400">Total</div>
-                    <div className="font-semibold text-slate-100">{categoryCounts.total}</div>
+                    <div className="font-semibold text-slate-100">
+                      {categoryCounts.total}
+                    </div>
                   </div>
                   <div>
                     <div className="text-xs text-slate-400">Available</div>
-                    <div className="font-semibold text-emerald-300">{categoryCounts.available}</div>
+                    <div className="font-semibold text-emerald-300">
+                      {categoryCounts.available}
+                    </div>
                   </div>
                   <div>
                     <div className="text-xs text-slate-400">Sold</div>
-                    <div className="font-semibold text-amber-300">{categoryCounts.sold}</div>
+                    <div className="font-semibold text-amber-300">
+                      {categoryCounts.sold}
+                    </div>
                   </div>
                   <div>
                     <div className="text-xs text-slate-400">Unsold</div>
-                    <div className="font-semibold text-pink-300">{categoryCounts.unsold}</div>
+                    <div className="font-semibold text-pink-300">
+                      {categoryCounts.unsold}
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -1235,10 +1470,11 @@ const AdminAuctionControl = () => {
                 type="button"
                 onClick={handlePlayPause}
                 disabled={!selectedCategoryId}
-                className={`px-4 py-2 rounded-full text-sm font-semibold transition ${!selectedCategoryId
-                  ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-                  : "bg-emerald-500 text-slate-950 hover:bg-emerald-600"
-                  }`}
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
+                  !selectedCategoryId
+                    ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                    : "bg-emerald-500 text-slate-950 hover:bg-emerald-600"
+                }`}
               >
                 {buttonText}
               </button>
@@ -1280,15 +1516,14 @@ const AdminAuctionControl = () => {
                     <div className="relative">
                       <div className="w-28 h-28 rounded-2xl overflow-hidden bg-slate-800 border border-slate-700">
                         {currentPlayer.profilePicture ? (
-                         <img
-  src={currentPlayer.profilePicture}
-  alt={currentPlayer.name}
-  className="w-full h-full object-cover"
-  onError={(e) => {
-    e.target.style.display = "none";
-  }}
-/>
-
+                          <img
+                            src={currentPlayer.profilePicture}
+                            alt={currentPlayer.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                            }}
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-xs text-slate-400">
                             No Image
@@ -1391,18 +1626,18 @@ const AdminAuctionControl = () => {
                       )}
                     </div>
 
-                    {selectedTeam && (
+                    {selectedTeamId && (
                       <div className="mt-4 pt-3 border-t border-slate-800">
                         <p className="text-xs text-slate-500">
                           Last Selected Team
                         </p>
                         <p className="text-sm font-semibold text-slate-100">
-                          {selectedTeam.teamName}
+                          {selectedTeamId.teamName}
                         </p>
                         <p className="text-sm text-slate-400">
                           Remaining Purse:{" "}
                           <span className="text-emerald-400 font-semibold">
-                            {formatMoney(selectedTeam.remainingBudget)}
+                            {formatMoney(selectedTeamId.remainingBudget)}
                           </span>
                         </p>
                       </div>
@@ -1432,9 +1667,7 @@ const AdminAuctionControl = () => {
                           <input
                             type="text"
                             value={teamSearch}
-                            onChange={(e) =>
-                              setTeamSearch(e.target.value)
-                            }
+                            onChange={(e) => setTeamSearch(e.target.value)}
                             placeholder="Search team"
                             className="w-full sm:w-40 bg-slate-900 border border-slate-700 rounded-full px-4 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-sky-500"
                           />
@@ -1449,9 +1682,10 @@ const AdminAuctionControl = () => {
                           onClick={openSoldConfirm}
                           disabled={!canMarkDecision}
                           className={`px-3 py-2 rounded-full text-xs font-semibold transition 
-                            ${!canMarkDecision
-                              ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-                              : "bg-emerald-500 text-slate-950 hover:bg-emerald-600"
+                            ${
+                              !canMarkDecision
+                                ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                                : "bg-emerald-500 text-slate-950 hover:bg-emerald-600"
                             }
                           `}
                         >
@@ -1464,9 +1698,10 @@ const AdminAuctionControl = () => {
                           onClick={openUnsoldConfirm}
                           disabled={!canMarkDecision}
                           className={`px-3 py-2 rounded-full text-xs font-semibold transition 
-                            ${!canMarkDecision
-                              ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-                              : "bg-red-500 text-slate-50 hover:bg-red-600"
+                            ${
+                              !canMarkDecision
+                                ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                                : "bg-red-500 text-slate-50 hover:bg-red-600"
                             }
                           `}
                         >
@@ -1486,9 +1721,10 @@ const AdminAuctionControl = () => {
                           onClick={openUndoLastBidConfirm}
                           disabled={!canMarkDecision}
                           className={`px-3 py-2 rounded-full text-xs font-semibold transition 
-                            ${!canMarkDecision
-                              ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-                              : "bg-amber-500 text-slate-900 hover:bg-amber-600"
+                            ${
+                              !canMarkDecision
+                                ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                                : "bg-amber-500 text-slate-900 hover:bg-amber-600"
                             }
                           `}
                         >
@@ -1498,11 +1734,16 @@ const AdminAuctionControl = () => {
                           type="button"
                           // onClick={handleUndoMark}
                           onClick={openUndoConfirm}
-                          disabled={!(currentPlayer && currentPlayer.status === 'sold')}
+                          disabled={
+                            !(currentPlayer && currentPlayer.status === "sold")
+                          }
                           className={`px-3 py-2 rounded-full text-xs font-semibold transition 
-                            ${!(currentPlayer && currentPlayer.status === 'sold')
-                              ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-                              : "bg-indigo-500 text-slate-50 hover:bg-indigo-600"
+                            ${
+                              !(
+                                currentPlayer && currentPlayer.status === "sold"
+                              )
+                                ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                                : "bg-indigo-500 text-slate-50 hover:bg-indigo-600"
                             }
                           `}
                         >
@@ -1578,7 +1819,9 @@ const AdminAuctionControl = () => {
                     const remainingIfWin = (() => {
                       if (!currentPlayer) return null;
                       if (team.teamId !== selectedTeamId) return null;
-                      const payAmount = Number(currentBid ?? currentPlayer.basePrice ?? 0);
+                      const payAmount = Number(
+                        currentBid ?? currentPlayer.basePrice ?? 0
+                      );
                       return Math.max(team.remainingBudget - payAmount, 0);
                     })();
 
@@ -1588,10 +1831,11 @@ const AdminAuctionControl = () => {
                         disabled={isDisabled}
                         onClick={() => handleTeamBid(team.teamId)}
                         className={`rounded-xl p-3 text-sm border transition 
-        ${isSelected
-                            ? "bg-sky-600 border-sky-400"
-                            : "bg-slate-900 border-slate-700"
-                          }
+        ${
+          isSelected
+            ? "bg-sky-600 border-sky-400"
+            : "bg-slate-900 border-slate-700"
+        }
         ${isDisabled ? "opacity-70 cursor-not-allowed" : "hover:border-sky-400"}
       `}
                       >
@@ -1599,17 +1843,19 @@ const AdminAuctionControl = () => {
 
                         <div className="text-xs text-slate-400">
                           ₹{displayBudget.toLocaleString()}
-                          {(remainingIfWin !== null && currentPlayer?.status !== "sold") && (
-                            <div className="text-[11px] text-slate-300 mt-1">
-                              If wins: <span className="font-semibold text-emerald-300">₹{remainingIfWin.toLocaleString()}</span>
-                            </div>
-                          )}
+                          {remainingIfWin !== null &&
+                            currentPlayer?.status !== "sold" && (
+                              <div className="text-[11px] text-slate-300 mt-1">
+                                If wins:{" "}
+                                <span className="font-semibold text-emerald-300">
+                                  ₹{remainingIfWin.toLocaleString()}
+                                </span>
+                              </div>
+                            )}
                         </div>
                       </button>
                     );
                   })}
-
-
 
                   {filteredTeams.length === 0 && (
                     <div className="col-span-full text-center text-sm text-slate-400 py-4">
@@ -1640,21 +1886,34 @@ const AdminAuctionControl = () => {
                     {biddingHistory.map((entry, idx) => (
                       <div
                         key={idx}
-                        className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${idx === 0
-                          ? "bg-amber-500/20 border border-amber-500/40 ring-2 ring-amber-400/30 animate-pulse shadow-lg shadow-amber-400/20"
-                          : "bg-slate-800/50 border border-slate-700/30 hover:bg-slate-800/70"
-                          }`}
+                        className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
+                          idx === 0
+                            ? "bg-amber-500/20 border border-amber-500/40 ring-2 ring-amber-400/30 animate-pulse shadow-lg shadow-amber-400/20"
+                            : "bg-slate-800/50 border border-slate-700/30 hover:bg-slate-800/70"
+                        }`}
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
-                          {idx === 0 && <span className="text-amber-400 font-bold text-lg">★</span>}
-                          <span className={`text-sm font-semibold truncate ${idx === 0 ? "text-amber-100" : "text-slate-200"
-                            }`}>
+                          {idx === 0 && (
+                            <span className="text-amber-400 font-bold text-lg">
+                              ★
+                            </span>
+                          )}
+                          <span
+                            className={`text-sm font-semibold truncate ${
+                              idx === 0 ? "text-amber-100" : "text-slate-200"
+                            }`}
+                          >
                             {entry.teamName}
                           </span>
                         </div>
                         <div className="flex items-center gap-4">
-                          <span className={`font-bold min-w-20 text-right ${idx === 0 ? "text-amber-300 text-base" : "text-emerald-400 text-sm"
-                            }`}>
+                          <span
+                            className={`font-bold min-w-20 text-right ${
+                              idx === 0
+                                ? "text-amber-300 text-base"
+                                : "text-emerald-400 text-sm"
+                            }`}
+                          >
                             {formatMoney(entry.amount)}
                           </span>
                           <span className="text-xs text-slate-400 whitespace-nowrap">
@@ -1679,20 +1938,14 @@ const AdminAuctionControl = () => {
           confirmState.title === "Undo Last Bid"
             ? "Yes, Undo Bid"
             : confirmState.title === "Undo Last Action"
-              ? "Yes, Undo"
-              : "Confirm"
+            ? "Yes, Undo"
+            : "Confirm"
         }
         cancelText="Cancel"
-        onCancel={() =>
-          setConfirmState(p => ({ ...p, open: false }))
-        }
+        onCancel={() => setConfirmState((p) => ({ ...p, open: false }))}
         onConfirm={confirmState.onConfirm}
       />
-
-
-
     </div>
-
   );
 };
 

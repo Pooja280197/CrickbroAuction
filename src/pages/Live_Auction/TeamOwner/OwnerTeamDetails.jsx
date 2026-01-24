@@ -143,7 +143,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
   const TeamDetailsTab = () => (
     <div className="space-y-6">
       {/* Main Team Card */}
-      <div className="relative overflow-hidden rounded-2xl bg-black shadow-lg shadow-gray-900">
+      <div className="relative overflow-hidden rounded-2xl bg-[var(--color-primary)] shadow-lg ">
         <div className="relative flex items-center gap-5 p-6">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl blur-sm opacity-20"></div>
@@ -163,22 +163,22 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
               {team?.teamName}
             </h2>
             <p className="text-blue-500 text-sm font-medium mt-1 flex items-center gap-2">
-              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+              <span className="w-2 h-2 bg-blue-200 rounded-full"></span>
               {team?.teamCity}
             </p>
             <div className="flex flex-wrap gap-4 mt-3">
-              <div className="px-3 py-1.5 bg-black shadow-lg shadow-gray-900 rounded-lg border border-green-100 ">
-                <span className="text-gray-600 text-sm">Budget: </span>
-                <span className="font-bold text-green-700">
+              <div className="px-3 py-1.5 bg-[var(--color-primary-light)] shadow-lg  rounded-lg border border-green-100 ">
+                <span className="text-gray-200 text-sm">Budget: </span>
+                <span className="font-bold text-green-400">
                   ₹{details?.remainingBudget?.toLocaleString()}
                 </span>
                 <span className="text-gray-400 text-xs ml-1">
                   / {details?.initialBudget?.toLocaleString()}
                 </span>
               </div>
-              <div className="px-3 py-1.5 bg-black shadow-lg shadow-gray-900 rounded-lg border border-purple-100 ">
-                <span className="text-gray-600 text-sm">RTM Available: </span>
-                <span className="font-bold text-purple-700">
+              <div className="px-3 py-1.5 bg-[var(--color-primary-light)] shadow-lg rounded-lg border border-purple-100 ">
+                <span className="text-gray-200 text-sm">RTM Available: </span>
+                <span className="font-bold text-purple-400">
                   {details?.rtmCardsAvailable}
                 </span>
               </div>
@@ -188,7 +188,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
       </div>
 
       {/* Owners Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-black shadow-lg shadow-gray-900">
+      <div className="relative overflow-hidden rounded-2xl bg-[var(--color-primary)] shadow-lg ">
         <div className="relative p-6">
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <div className="w-1.5 h-6 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
@@ -198,13 +198,13 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
             {team?.owners?.map((owner, index) => (
               <div
                 key={owner?._id}
-                className={`p-4 rounded-xl bg-black shadow-lg shadow-gray-900  hover:shadow-md transition-shadow duration-300  ${
+                className={`p-4 rounded-xl bg-[var(--color-primary-light)] shadow-lg   hover:shadow-md transition-shadow duration-300  ${
                   index === 0 ? "ring-1 ring-purple-100" : ""
                 }`}
               >
                 <div className="flex items-center gap-4">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-black shadow-lg shadow-gray-900 text-white rounded-full blur opacity-20"></div>
+                    <div className="absolute inset-0 bg-[var(--color-primary)] shadow-lg  text-white rounded-full blur opacity-20"></div>
                     <img
                       src={owner?.logo}
                       alt={owner?.name}
@@ -236,7 +236,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
       </div>
 
       {/* Team Rules Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-black shadow-lg shadow-gray-900 ">
+      <div className="relative overflow-hidden rounded-2xl bg-[var(--color-primary)] shadow-lg ">
         <div className="relative p-6">
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <div className="w-1.5 h-6 bg-gradient-to-b from-amber-500 to-amber-600 rounded-full"></div>
@@ -244,55 +244,55 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
-              <div className="p-3  rounded-lg border border-amber-100 shadow-sm">
+              <div className="p-3 bg-[var(--color-primary-light)] rounded-lg border border-amber-100 shadow-sm">
                 <div className="text-sm font-medium text-amber-600 mb-1">
                   Squad Composition
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-200">
                   Min {details?.minPlayers} - Max {details?.maxPlayers} players
                 </div>
               </div>
-              <div className="p-3 rounded-lg border border-amber-100 shadow-sm">
+              <div className="p-3 bg-[var(--color-primary-light)] rounded-lg border border-amber-100 shadow-sm">
                 <div className="text-sm font-medium text-amber-600 mb-1">
                   Foreign Players
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-200">
                   Max {details?.maxForeignPlayers} overseas players allowed
                 </div>
               </div>
-              <div className="p-3  rounded-lg border border-amber-100 shadow-sm">
+              <div className="p-3 bg-[var(--color-primary-light)] rounded-lg border border-amber-100 shadow-sm">
                 <div className="text-sm font-medium text-amber-600 mb-1">
                   Wicket Keepers
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-200">
                   Min {details?.minWicketKeepers} - Max{" "}
                   {details?.maxWicketKeepers}
                 </div>
               </div>
             </div>
             <div className="space-y-3">
-              <div className="p-3 rounded-lg border border-amber-100 shadow-sm">
+              <div className="p-3 bg-[var(--color-primary-light)] rounded-lg border border-amber-100 shadow-sm">
                 <div className="text-sm font-medium text-amber-600 mb-1">
                   Purchase Limits
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-200">
                   Min {details?.minPurchasePlayers} - Max{" "}
                   {details?.maxPurchasePlayers} players per session
                 </div>
               </div>
-              <div className="p-3  rounded-lg border border-amber-100 shadow-sm">
+              <div className="p-3 bg-[var(--color-primary-light)]  rounded-lg border border-amber-100 shadow-sm">
                 <div className="text-sm font-medium text-amber-600 mb-1">
                   Return Players
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-200">
                   Maximum {details?.maxReturnPlayers} players can be returned
                 </div>
               </div>
-              <div className="p-3  rounded-lg border border-amber-100 shadow-sm">
+              <div className="p-3 bg-[var(--color-primary-light)] rounded-lg border border-amber-100 shadow-sm">
                 <div className="text-sm font-medium text-amber-600 mb-1">
                   Team Status
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-200">
                   {team?.isOwner ? "You are an owner" : "Viewing as spectator"}
                 </div>
               </div>
@@ -307,7 +307,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
   const MyWalletTab = () => (
     <div className="space-y-6">
       {/* Budget Overview */}
-      <div className="relative overflow-hidden rounded-2xl bg-black shadow-lg shadow-gray-900 border border-emerald-100 ">
+      <div className="relative overflow-hidden rounded-2xl bg-[var(--color-primary)] shadow-lg  border border-emerald-100 ">
         <div className="relative p-6">
           <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
             <div className="w-1.5 h-6 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full"></div>
@@ -362,10 +362,10 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
           {/* Budget Progress */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium text-gray-200">
                 Budget Utilization
               </span>
-              <span className="text-sm font-bold text-gray-800">
+              <span className="text-sm font-bold text-gray-200">
                 ₹{details?.purseSpent?.toLocaleString()} / ₹
                 {details?.initialBudget?.toLocaleString()}
               </span>
@@ -385,18 +385,18 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
                 </div>
               </div>
               <div className="flex justify-between mt-2">
-                <span className="text-xs text-gray-500">0%</span>
-                <span className="text-xs text-gray-500">100%</span>
+                <span className="text-xs text-gray-200">0%</span>
+                <span className="text-xs text-gray-200">100%</span>
               </div>
             </div>
           </div>
 
           {/* Per Player Budget */}
-          <div className="p-4 rounded-xl bg-black shadow-lg shadow-gray-900 border border-blue-100 ">
-            <h4 className="font-semibold text-gray-700 mb-3">
+          <div className="p-4 rounded-xl bg-[var(--color-primary-light)] shadow-lg  border border-blue-100 ">
+            <h4 className="font-semibold text-gray-200 mb-3">
               Average Cost Per Player
             </h4>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-blue-400">
               ₹
               {details?.currentSquadSize > 0
                 ? Math.round(
@@ -404,7 +404,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
                   )?.toLocaleString()
                 : 0}
             </div>
-            <div className="text-sm text-gray-500 mt-1">
+            <div className="text-sm text-gray-200 mt-1">
               Based on {details?.currentSquadSize} players bought so far
             </div>
           </div>
@@ -412,24 +412,24 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
       </div>
 
       {/* RTM Cards Status */}
-      <div className="relative overflow-hidden rounded-2xl bg-black shadow-lg shadow-gray-900 border border-purple-100 ">
+      <div className="relative overflow-hidden rounded-2xl bg-[var(--color-primary)] shadow-lg border border-purple-100 ">
         <div className="relative p-6">
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <div className="w-1.5 h-6 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
             RTM Cards Status
           </h3>
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl bg-black shadow-lg shadow-gray-900 border border-purple-100 ">
-              <div className="text-sm font-medium text-purple-600 mb-1">
+            <div className="p-4 rounded-xl bg-[var(--color-primary-light)] shadow-lg  border border-purple-100 ">
+              <div className="text-sm font-medium text-purple-400 mb-1">
                 Available
               </div>
-              <div className="text-2xl font-bold text-purple-700">
+              <div className="text-2xl font-bold text-purple-400">
                 {details?.rtmCardsAvailable}
               </div>
             </div>
-            <div className="p-4 rounded-xl bg-black shadow-lg shadow-gray-900 border border-purple-100 ">
-              <div className="text-sm font-medium text-gray-600 mb-1">Used</div>
-              <div className="text-2xl font-bold text-gray-700">
+            <div className="p-4 rounded-xl bg-[var(--color-primary-light)] shadow-lg  border border-purple-100 ">
+              <div className="text-sm font-medium text-gray-200 mb-1">Used</div>
+              <div className="text-2xl font-bold text-gray-200">
                 {details?.rtmCardsUsed}
               </div>
             </div>
@@ -442,7 +442,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
   // Live Bidding Tab
   const LiveBiddingTab = () => (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl bg-black shadow-lg shadow-gray-900 border border-orange-100 ">
+      <div className="relative overflow-hidden rounded-2xl bg-[var(--color-primary)] shadow-lg  border border-orange-100 ">
         <div className="relative p-8">
           {/* Decorative elements */}
 
@@ -468,7 +468,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
             </h2>
 
             {/* Description */}
-            <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+            <p className="text-lg text-gray-200 mb-8 leading-relaxed">
               Join the live auction room to bid on players in real-time! Watch
               as teams compete to build their squads, make strategic bids, and
               use your RTM cards wisely to secure your favorite players.
@@ -559,7 +559,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
 
     return (
       <div className="space-y-6">
-        <div className="relative overflow-hidden rounded-2xl bg-black shadow-lg shadow-gray-900 border border-sky-100 ">
+        <div className="relative overflow-hidden rounded-2xl bg-[var(--color-primary)] shadow-lg border border-sky-100 ">
           <div className="relative p-6">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
@@ -568,8 +568,8 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
                 Squad Players ({players?.length})
               </h3>
 
-              <div className="px-3 py-1.5 bg-black shadow-lg shadow-gray-900 rounded-lg border border-sky-200">
-                <span className="text-sm font-medium text-sky-700">
+              <div className="px-3 py-1.5 bg-[var(--color-primary-light)] shadow-lg  rounded-lg border border-sky-200">
+                <span className="text-sm font-medium text-sky-100">
                   Total Spent: ₹{totalSpent?.toLocaleString()}
                 </span>
               </div>
@@ -580,7 +580,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
               {players?.map((p) => (
                 <div
                   key={p.playerId}
-                  className="group relative overflow-hidden rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:border-sky-200"
+                  className="group relative overflow-hidden rounded-xl border bg-[var(--color-primary-light)] border-gray-200 shadow-sm hover:shadow-md transition-all duration-300"
                 >
                   <div className="p-4">
                     {/* TOP SECTION */}
@@ -613,7 +613,7 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
                       {p.rating?.avgRatingComputed ? (
                         <div className="flex items-center gap-1">
                           <span className="text-amber-500">★</span>
-                          <span className="font-semibold text-gray-700">
+                          <span className="font-semibold text-gray-200">
                             {p.rating.avgRatingComputed}
                           </span>
                         </div>
@@ -624,10 +624,10 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
                     <div className="mt-4 pt-4 border-t border-gray-100">
                       <div className="flex justify-between items-center">
                         <div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-200">
                             Bought Price
                           </div>
-                          <div className="font-bold text-green-600">
+                          <div className="font-bold text-green-400">
                             ₹
                             {(
                               p.finalPrice ||
@@ -649,42 +649,42 @@ const OwnerTeamDetails = ({ auctionId, playerId }) => {
 
             {/* SUMMARY SECTION */}
             <div className="mt-8 pt-6 border-t border-gray-200">
-              <h4 className="font-semibold text-gray-400 mb-4">
+              <h4 className="font-semibold text-gray-200 mb-4">
                 Squad Summary
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-3 rounded-lg bg-black shadow-lg shadow-gray-900 border border-gray-200">
-                  <div className="text-xs text-gray-500 mb-1">
+                <div className="p-3 rounded-lg bg-[var(--color-primary-light)] shadow-lg border border-gray-200">
+                  <div className="text-xs text-gray-200 mb-1">
                     Total Players
                   </div>
-                  <div className="text-xl font-bold text-gray-800">
+                  <div className="text-xl font-bold text-gray-200">
                     {players?.length}
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg bg-black shadow-lg shadow-gray-900 to-white border border-green-200">
-                  <div className="text-xs text-gray-500 mb-1">
+                <div className="p-3 rounded-lg bg-[var(--color-primary-light)] shadow-lg to-white border border-green-200">
+                  <div className="text-xs text-gray-200 mb-1">
                     Indian Players
                   </div>
-                  <div className="text-xl font-bold text-green-700">
+                  <div className="text-xl font-bold text-green-400">
                     {indianCount}
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg bg-black shadow-lg shadow-gray-900 to-white border border-purple-200">
-                  <div className="text-xs text-gray-500 mb-1">
+                <div className="p-3 rounded-lg bg-[var(--color-primary-light)] shadow-lg  to-white border border-purple-200">
+                  <div className="text-xs text-gray-200 mb-1">
                     Foreign Players
                   </div>
-                  <div className="text-xl font-bold text-purple-700">
+                  <div className="text-xl font-bold text-purple-400">
                     {foreignCount}
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg bg-black shadow-lg shadow-gray-900 to-white border border-amber-200">
-                  <div className="text-xs text-gray-500 mb-1">
+                <div className="p-3 rounded-lg bg-[var(--color-primary-light)] shadow-lg to-white border border-amber-200">
+                  <div className="text-xs text-gray-200 mb-1">
                     Average Rating
                   </div>
-                  <div className="text-xl font-bold text-amber-700">
+                  <div className="text-xl font-bold text-amber-400">
                     {avgRating}
                   </div>
                 </div>

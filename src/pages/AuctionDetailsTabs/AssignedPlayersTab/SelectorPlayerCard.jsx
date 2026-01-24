@@ -205,7 +205,7 @@ const RatingForm = ({ player, onClose, onSubmit, ratingFields }) => {
 
   const handleSubmit = async () => {
     // Use the correct player ID from the data structure
-    const playerId = player.player?._id || player.auctionPlayerId;
+    const playerId = player.player?._id ;
 
     // Prepare field array based on ratingFields
     const fieldData =
@@ -550,7 +550,8 @@ const PlayerDetailsModal = ({
 
   const handleRemoveRating = async () => {
     // Check if we have the required IDs
-    if (!slotId || !sessionId || !player?.auctionPlayerId) {
+    console.log(player,"player")
+    if (!slotId || !sessionId || !player.player?._id) {
       toast.error("Missing required information to remove rating");
       return;
     }
@@ -565,7 +566,7 @@ const PlayerDetailsModal = ({
       const res = await axios.post(
         `/webSiteApi/auctionSelector/removePlayerRating/${slotId}/${sessionId}`,
         {
-          playerId: player.auctionPlayerId, // Fixed the syntax here
+          playerId: player.player?._id, // Fixed the syntax here
           selectorId: selectorId,
         }
       );
@@ -1020,7 +1021,7 @@ const SelectorPlayerCard = ({
       <div
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 
+        className="relative bg-[var(--color-primary)] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 
         border border-gray-200 overflow-hidden flex w-full max-w-sm p-3 gap-3"
       >
         {/* LEFT: IMAGE */}
@@ -1072,7 +1073,7 @@ const SelectorPlayerCard = ({
         >
           {/* NAME & BATCH */}
           <div className="flex justify-between items-start">
-            <h3 className="font-semibold text-gray-900 text-sm">
+            <h3 className="font-semibold text-gray-200 text-sm">
               {player?.player?.batchId}
             </h3>
           </div>
@@ -1080,16 +1081,16 @@ const SelectorPlayerCard = ({
           {/* VENUE */}
           {session?.slot?.location && (
             <div className="flex items-center gap-1 mt-1">
-              <MapPin className="w-3 h-3 text-pink-500" />
-              <span className="text-xs text-gray-700 truncate">
+              <MapPin className="w-3 h-3 text-blue-300" />
+              <span className="text-xs text-gray-300 truncate">
                 {session?.slot?.slotName}
               </span>
             </div>
           )}
           {session?.name && (
             <div className="flex items-center gap-1 mt-1">
-              <CalendarCheck className="w-3 h-3 text-pink-500" />
-              <span className="text-xs text-gray-700 truncate">
+              <CalendarCheck className="w-3 h-3 text-pink-300" />
+              <span className="text-xs text-gray-300 truncate">
                 Session -{session?.name}
               </span>
             </div>
@@ -1098,8 +1099,8 @@ const SelectorPlayerCard = ({
           {/* TIMING */}
           {session && (
             <div className="flex items-center gap-1 mt-1">
-              <Clock className="w-3 h-3 text-green-600" />
-              <span className="text-xs text-gray-600">
+              <Clock className="w-3 h-3 text-green-200" />
+              <span className="text-xs text-gray-300">
                 {formatTime(session.slotStartTime)} -{" "}
                 {formatTime(session.slotEndTime)}
               </span>

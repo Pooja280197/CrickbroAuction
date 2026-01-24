@@ -6,6 +6,7 @@ import Footer from "../components/Footer";
 import { fetchAuctions } from "../redux/actions";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { useLoginPopup } from "../context/LoginPopupContext";
 
 /* ---------------- HELPERS ---------------- */
 
@@ -39,12 +40,23 @@ const tabs = [
 
 const AuctionBrowse = () => {
   const [activeTab, setActiveTab] = useState("ongoing");
+  const [loginRefresh, setLoginRefresh] = useState(0); // Trigger for login events
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { openLoginPopup } = useLoginPopup();
   const playerId = localStorage.getItem("playerId");
+  const isLoggedIn = Boolean(playerId);
 
   const isHome = window.location.pathname === "/";
+
+  // Filter tabs based on login status
+  const visibleTabs = tabs.filter(tab => {
+    if (tab.key === "my") {
+      return isLoggedIn; // Only show "My auctions" if logged in
+    }
+    return true; // Show all public tabs
+  });
 
   const isLoading = useSelector((state) => state.loading?.auctionList || false);
 
@@ -54,20 +66,50 @@ const AuctionBrowse = () => {
 
   const auctions = auctionData?.data || [];
 
+  // Listen for login event to refresh data
   useEffect(() => {
-    if (playerId) {
-      const isMyAuction = activeTab === "my";
-      dispatch(fetchAuctions(activeTab, playerId, isMyAuction));
+    const handleLoginEvent = () => {
+      setLoginRefresh((prev) => prev + 1);
+    };
+
+    window.addEventListener("userLoggedIn", handleLoginEvent);
+    return () => window.removeEventListener("userLoggedIn", handleLoginEvent);
+  }, []);
+
+  useEffect(() => {
+    // For "my" tab, user must be logged in
+    if (activeTab === "my") {
+      if (playerId) {
+        dispatch(fetchAuctions(activeTab, playerId));
+      }
+    } else {
+      // For public tabs (ongoing, scheduled, completed), allow anyone
+      dispatch(fetchAuctions(activeTab, null));
     }
-  }, [dispatch, playerId, activeTab]);
+  }, [dispatch, playerId, activeTab, loginRefresh]);
 
   /* ---------------- FILTER ---------------- */
 
-  const handleOpenAuction = (auctionId) => {
-    navigate(`/auction-details/${auctionId}`);
-    // navigate(`/viewAuction/${auctionId}`);
+  const handleCreateAuction = () => {
+    if (!isLoggedIn) {
+      // Show login popup with callback to navigate after login
+      openLoginPopup(() => {
+        navigate("/createAuction");
+      });
+    } else {
+      navigate("/createAuction");
+    }
   };
 
+  const handleOpenAuction = (auctionId) => {
+    if (activeTab === "my") {
+      navigate(`/auction-details/${auctionId}`);
+    } else {
+      navigate(`/viewAuction/${auctionId}`);
+    }
+
+    // navigate(`/viewAuction/${auctionId}`);
+  };
 
   return (
     <>
@@ -77,7 +119,7 @@ const AuctionBrowse = () => {
           ${
             isHome
               ? "bg-gradient-to-br from-[var(--color-primary)] via-[var(--color-primary-dark)] to-[var(--color-primary-darker)]"
-              : "bg-[#FFF9EC]"
+              : "bg-[#E1EDEE]"
           }`}
       >
         <div className="max-w-6xl mx-auto  ">
@@ -95,9 +137,7 @@ const AuctionBrowse = () => {
             </div>
             <div>
               <button
-                onClick={() => {
-                  navigate("/createAuction");
-                }}
+                onClick={handleCreateAuction}
                 className="animate-floatSoft px-5 py-2 rounded-lg bg-[var(--color-primary)] text-white font-medium shadow-md"
               >
                 Create Auction
@@ -119,7 +159,7 @@ const AuctionBrowse = () => {
           {/* Tabs */}
           {!isHome && (
             <div className="flex flex-wrap gap-3 mb-4">
-              {tabs.map((tab) => (
+              {visibleTabs.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
@@ -166,6 +206,7 @@ const AuctionBrowse = () => {
                   key={auction._id}
                   whileHover={{ scale: 1.03, y: -6 }}
                   transition={{ type: "spring", stiffness: 200 }}
+                  onClick={() => handleOpenAuction(auction._id)}
                   className={`cursor-pointer rounded-3xl p-6 
                     ${
                       isHome
@@ -176,7 +217,6 @@ const AuctionBrowse = () => {
                   {/* Top */}
                   <div
                     className="flex justify-between items-start relative"
-                    onClick={() => handleOpenAuction(auction._id)}
                   >
                     <div>
                       <h3
@@ -194,25 +234,27 @@ const AuctionBrowse = () => {
                         {auction.tournamentId?.cityTown || "—"}
                       </p>
                     </div>
-                   {activeTab === "my" && <div className="absolute top-0 right-0 flex gap-2 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200">
-                      <button
-                        className="p-2 rounded-lg bg-white shadow hover:bg-blue-50 "
-                        title="Edit"
-                        onClick={(e) => {
-                          e.stopPropagation(); 
-                          navigate(`/editAuction/${auction._id}`);
-                        }}
-                      >
-                        <Edit className="w-4 h-4 text-blue-600" />
-                      </button>
+                    {activeTab === "my" && (
+                      <div className="absolute top-0 right-0 flex gap-2 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200">
+                        <button
+                          className="p-2 rounded-lg bg-white shadow hover:bg-blue-50 "
+                          title="Edit"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/editAuction/${auction._id}`);
+                          }}
+                        >
+                          <Edit className="w-4 h-4 text-blue-600" />
+                        </button>
 
-                      {/* <button
+                        {/* <button
                         className="p-2 rounded-lg bg-white shadow hover:bg-red-50"
                         title="Delete"
                       >
                         <Trash className="w-4 h-4 text-red-500" />
                       </button> */}
-                    </div>}
+                      </div>
+                    )}
 
                     {auction.isBiddingActive && (
                       <span

@@ -41,14 +41,16 @@ useEffect(() => {
 
   hasHandledLogin.current = true;
 
-  if (afterLoginCallback) {
-    afterLoginCallback();
-    setAfterLoginCallback(null);
-  } else {
-    navigate("/");
-  }
+  // Small delay to ensure Redux state and localStorage are fully synced
+  // before closing popup and allowing navigation
+  setTimeout(() => {
+    if (afterLoginCallback) {
+      afterLoginCallback();
+      setAfterLoginCallback(null);
+    }
 
-  closeLoginPopup();
+    closeLoginPopup();
+  }, 100);
 }, [verifyData, afterLoginCallback, navigate, closeLoginPopup]);
 
 

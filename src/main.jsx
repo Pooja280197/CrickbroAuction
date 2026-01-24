@@ -7,7 +7,7 @@ import store from "./redux/Store.js";
 import { LoginPopupProvider } from "./context/LoginPopupContext.jsx";
 
 createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
+  // <React.StrictMode>
     <Provider store={store}>
       <LoginPopupProvider>
         
@@ -15,5 +15,5 @@ createRoot(document.getElementById("root")).render(
        
       </LoginPopupProvider>
     </Provider>
-  </React.StrictMode>
+  // </React.StrictMode>
 );

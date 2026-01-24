@@ -104,7 +104,7 @@ const TournamentDetails = ({ auctionId }) => {
         <div className="lg:col-span-2 space-y-6">
 
           {/* Tournament Info */}
-          <div className="rounded-2xl bg-black/70 backdrop-blur-md border border-white/10 p-6">
+          <div className="rounded-2xl bg-[var(--color-primary)] backdrop-blur-md border border-white/10 p-6">
             <h3 className="text-lg font-semibold text-white mb-4">
               Tournament Information
             </h3>
@@ -127,7 +127,7 @@ const TournamentDetails = ({ auctionId }) => {
               {awardList?.map((award, idx) => (
                 <div
                   key={idx}
-                  className="bg-black/70 backdrop-blur-md border border-white/10 rounded-xl p-4 flex items-center gap-4"
+                  className="bg-[var(--color-primary)] backdrop-blur-md border border-white/10 rounded-xl p-4 flex items-center gap-4"
                 >
                   <div className="w-10 h-10 rounded-full bg-[var(--color-warm)]/20 flex items-center justify-center">
                     <Trophy className="w-5 h-5 text-[var(--color-warm)]" />
@@ -162,7 +162,7 @@ const TournamentDetails = ({ auctionId }) => {
           </div> */}
 
           {/* Organizer */}
-          <div className="rounded-2xl bg-black/70 backdrop-blur-md border border-white/10 p-6">
+          <div className="rounded-2xl bg-[var(--color-primary)] backdrop-blur-md border border-white/10 p-6">
             <h3 className="font-semibold text-white mb-4">
               Organizer
             </h3>
@@ -193,7 +193,7 @@ export default TournamentDetails;
 /* ================= SMALL COMPONENTS ================= */
 
 const Stat = ({ icon: Icon, label, value }) => (
-  <div className="flex items-center gap-3 bg-black/70 backdrop-blur-md border border-white/10 rounded-xl p-4">
+  <div className="flex items-center gap-3 bg-[var(--color-primary)] backdrop-blur-md border border-white/10 rounded-xl p-4">
     <Icon className="w-5 h-5 text-[var(--color-warm)]" />
     <div>
       <p className="text-xs text-white/60">{label}</p>
@@ -203,7 +203,7 @@ const Stat = ({ icon: Icon, label, value }) => (
 );
 
 const Info = ({ label, value }) => (
-  <div className="flex justify-between text-sm">
+  <div className="flex justify-between text-sm ">
     <span className="text-white/60">{label}</span>
     <span className="text-white font-medium">
       {value || "-"}

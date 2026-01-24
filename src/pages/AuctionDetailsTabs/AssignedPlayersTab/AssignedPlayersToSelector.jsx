@@ -95,10 +95,10 @@ function AssignedPlayersToSelector({ auctionId }) {
 
             {/* Pagination Controls */}
             {selectorPlayersTotalPages > 1 && (
-              <div className="flex items-center justify-between mt-6 px-4 py-3 bg-white rounded-lg border border-gray-200 shadow-sm">
-                <span className="text-sm text-gray-600">
+              <div className="flex items-center justify-between mt-6 px-4 py-3 bg-[var(--color-primary)] rounded-lg border border-gray-200 shadow-sm">
+                <span className="text-sm text-gray-200">
                   Page{" "}
-                  <span className="font-semibold text-purple-600">
+                  <span className="font-semibold text-green-300">
                     {selectorPlayersPage}
                   </span>{" "}
                   of{" "}
@@ -115,8 +115,8 @@ function AssignedPlayersToSelector({ auctionId }) {
                     disabled={selectorPlayersPage === 1}
                     className={`px-3 py-2 rounded-lg text-sm font-semibold transition ${
                       selectorPlayersPage === 1
-                        ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                        : "bg-purple-600 text-white hover:bg-purple-700"
+                        ? "bg-gray-500 text-gray-200 cursor-not-allowed"
+                        : "bg-white text-[var(--color-primary)]   "
                     }`}
                   >
                     ← Previous
@@ -128,8 +128,8 @@ function AssignedPlayersToSelector({ auctionId }) {
                     disabled={selectorPlayersPage === selectorPlayersTotalPages}
                     className={`px-3 py-2 rounded-lg text-sm font-semibold transition ${
                       selectorPlayersPage === selectorPlayersTotalPages
-                        ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                        : "bg-purple-600 text-white hover:bg-purple-700"
+                        ? "bg-gray-500 text-gray-200 cursor-not-allowed"
+                        : "bg-white text-[var(--color-primary)] "  
                     }`}
                   >
                     Next →

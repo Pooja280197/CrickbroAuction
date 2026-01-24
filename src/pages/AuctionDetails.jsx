@@ -15,6 +15,8 @@ import {
   CalendarClock,
   Settings,
   Layers,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 // TAB CONTENT COMPONENTS
@@ -98,10 +100,12 @@ const AuctionDetails = () => {
   const dispatch = useDispatch();
   const [registerPopupOpen, setRegisterPopupOpen] = useState(false);
   const [selectedTournamentId, setSelectedTournamentId] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const playerId = localStorage.getItem("playerId");
   const userRole = useSelector((state) => state.data?.userRole);
   const [activeTab, setActiveTab] = useState("info");
-  const tournamentId = localStorage.getItem("tournamentId");
+  // const tournamentId = localStorage.getItem("tournamentId");
+  const tournamentId = useSelector((state) => state.tournamentId);
 
   const isTrialType = useSelector(
     (state) => state?.data?.auctionDetails?.trailTypeAuction
@@ -177,6 +181,8 @@ const AuctionDetails = () => {
     }
   }, [allowedTabKeys, activeTab]);
 
+  
+
   const enrollPlayer = async () => {
     const playerId = localStorage.getItem("playerId");
 
@@ -249,8 +255,8 @@ const AuctionDetails = () => {
     return (
       <>
         <Header />
-        <main className="relative min-h-screen">
-          <div className="absolute inset-0 bg-black/50" />
+        <main className="relative min-h-screen ">
+          <div className="absolute inset-0 bg-black/50 " />
           <div className="relative z-10 flex items-center justify-center h-screen">
             <div className="text-white">Loading...</div>
           </div>
@@ -269,12 +275,26 @@ const AuctionDetails = () => {
       <main className="relative">
         {/* Background */}
         <div className="absolute inset-0" />
-        <div className="absolute inset-0 bg-black/50" />
+        <div className="absolute inset-0  bg-gradient-to-b from-[#021b17] via-[#073b36] to-[#071a1d]" />
 
-        <div className="relative z-10 grid grid-cols-12">
+        <div className="relative z-10 grid grid-cols-12 gap-4">
           {/* SIDEBAR */}
-          <aside className="col-span-12 md:col-span-3">
+          <aside className={`col-span-12 transition-all duration-300 ${sidebarCollapsed ? "md:col-span-1" : "md:col-span-3"}`}>
             <div className="sticky bg-black/80 backdrop-blur-md h-full p-3 space-y-1 border border-white/10">
+              {/* Toggle Button */}
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="hidden md:flex w-full items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition mb-2"
+                title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              >
+                {sidebarCollapsed ? (
+                  <ChevronRight className="w-4 h-4" />
+                ) : (
+                  <ChevronLeft className="w-4 h-4" />
+                )}
+                {!sidebarCollapsed && <span className="text-xs font-medium">Collapse</span>}
+              </button>
+
               {/* Debug info (optional) */}
               {showDebug && (
                 <div className="p-2 mb-3 text-xs bg-gray-900 rounded text-gray-300">
@@ -292,41 +312,44 @@ const AuctionDetails = () => {
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition justify-center md:justify-start
                       ${
                         isActive
                           ? "bg-[var(--color-primary)] text-white shadow"
                           : "text-white/70 hover:bg-white/10"
                       }`}
+                    title={sidebarCollapsed ? tab.label : undefined}
                   >
-                    <Icon className="w-4 h-4" />
-                    {tab.label}
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    {!sidebarCollapsed && <span>{tab.label}</span>}
                   </button>
                 );
               })}
 
               {/* CTA */}
-              <div className="rounded-xl bg-[#154947] p-4 text-white mt-3">
-                {userRole.auctionPlayer !== true && (
-                  <h3 className="font-semibold mb-2">Get Ready to Compete!</h3>
-                )}
-                <button
-                  className={`w-full  text-[#02271E] font-semibold py-2 rounded-lg ${
-                    userRole.auctionPlayer
-                      ? "bg-gray-500 text-gray-200 cursor-not-allowed"
-                      : "bg-[var(--color-warm)] text-black "
-                  }`}
-                  onClick={() => setRegisterPopupOpen(true)}
-                  disabled={userRole.auctionPlayer}
-                >
-                  {userRole.auctionPlayer ? "Registered" : "Register / Enroll"}
-                </button>
-              </div>
+              {!sidebarCollapsed && (
+                <div className="rounded-xl bg-[#154947] p-4 text-white mt-3">
+                  {userRole.auctionPlayer !== true && (
+                    <h3 className="font-semibold mb-2">Get Ready to Compete!</h3>
+                  )}
+                  <button
+                    className={`w-full  text-[#02271E] font-semibold py-2 rounded-lg ${
+                      userRole.auctionPlayer
+                        ? "bg-gray-500 text-gray-200 cursor-not-allowed"
+                        : "bg-[var(--color-warm)] text-black "
+                    }`}
+                    onClick={() => setRegisterPopupOpen(true)}
+                    disabled={userRole.auctionPlayer}
+                  >
+                    {userRole.auctionPlayer ? "Registered" : "Register / Enroll"}
+                  </button>
+                </div>
+              )}
             </div>
           </aside>
 
           {/* CONTENT */}
-          <section className="col-span-12 md:col-span-9">
+          <section className={`col-span-12 transition-all duration-300 ${sidebarCollapsed ? "md:col-span-11" : "md:col-span-9"}`}>
             <div className="bg-black/80 backdrop-blur-md p-6 h-full text-white border border-white/10">
               {renderTab()}
             </div>

@@ -1,216 +1,303 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
-import {
-  Calendar,
-  Users,
-  Trophy,
-  Clock,
-  PlayCircle
-} from "lucide-react";
-import { fetchAuctionDetails } from "../redux/actions";
-
-/* -------------------- Small Reusable UI -------------------- */
+import { motion } from "framer-motion";
+import { fetchAuctionDetails, EnrollPlayer, fetchUserRole } from "../redux/actions";
+import Header from "../components/Header";
+import RegisterPopup from "./RegisterPopup";
+import { toast } from "react-toastify";
+// import { fetchAuctionDetails } from "@/store/actions/auctionActions";
 
 const StatCard = ({ label, value }) => (
-  <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-    <p className="text-xs text-gray-400">{label}</p>
-    <p className="text-lg font-semibold mt-1">{value}</p>
+  <motion.div
+    whileHover={{ y: -2 }}
+    className="bg-white/5 backdrop-blur border border-white/10 rounded-xl px-4 py-3 hover:bg-white/10 transition"
+  >
+    <p className="text-[11px] uppercase tracking-wide text-white/60">{label}</p>
+    <p className="text-lg font-semibold text-white">{value}</p>
+  </motion.div>
+);
+
+const Skeleton = () => (
+  <div className="animate-pulse space-y-4 p-4">
+    <div className="h-56 bg-white/5 rounded-xl" />
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="h-16 bg-white/5 rounded-lg" />
+      ))}
+    </div>
+    <div className="h-32 bg-white/5 rounded-xl" />
   </div>
 );
 
-const Section = ({ title, children }) => (
-  <div className="space-y-4">
-    <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-      {title}
-    </h2>
-    {children}
-  </div>
-);
-
-/* -------------------- Page -------------------- */
-
-const AuctionDetailsPage = () => {
+export default function AuctionDetailsPage() {
   const { auctionId } = useParams();
   const dispatch = useDispatch();
-  
+  const [registerPopupOpen, setRegisterPopupOpen] = useState(false);
 
   const isLoading = useSelector(
-    (state) => state.loading?.auctionDetails
+    (state) => state.loading?.auctionDetails || false
   );
 
   const auctionData = useSelector(
-    (state) => state.data?.auctionDetails
+    (state) => state.data?.auctionDetails || null
   );
+
+  const userRole = useSelector((state) => state.data?.userRole || {});
 
   useEffect(() => {
-    if (auctionId) dispatch(fetchAuctionDetails(auctionId));
-  }, [auctionId, dispatch]);
+    if (auctionId ) {
+      dispatch(fetchAuctionDetails(auctionId));
+      const playerId = localStorage.getItem("playerId");
+      if (playerId) {
+        dispatch(fetchUserRole(auctionId, playerId));
+      }
+    }
+  }, [dispatch, auctionId]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B0F19]">
-        <div className="h-10 w-10 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+  const enrollPlayer = async () => {
+    const playerId = localStorage.getItem("playerId");
+
+    try {
+      await dispatch(EnrollPlayer(auctionId, playerId));
+      toast.success("Successfully Registered For The Tournament");
+      setRegisterPopupOpen(false);
+      dispatch(fetchUserRole(auctionId, playerId));
+    } catch (error) {
+      console.error(error);
+      toast.error("Enrollment Failed");
+    }
+  };
+
+  if (isLoading || !auctionData) {
+    return <Skeleton />;
   }
 
-  if (!auctionData) return null;
-
-  const {
-    auctionName,
-    auctionDate,
-    auctionStatus,
-    auctionType,
-    auctionRules,
-    tournament,
-    teams,
-    stream,
-    currentPlayer
-  } = auctionData;
-
-  const formatDate = (date) =>
-    new Date(date).toLocaleString("en-IN", {
-      dateStyle: "medium",
-      timeStyle: "short"
-    });
-
-  /* -------------------- UI -------------------- */
+  const { auctionRules, teams, tournamentId } = auctionData;
+  console.log(auctionData,"dataa")
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-white">
-
-      {/* ================= Sticky Header ================= */}
-      <div className="sticky top-0 z-30 backdrop-blur bg-black/60 border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-          <div>
-            <h1 className="text-lg font-semibold">{auctionName}</h1>
-            <p className="text-xs text-gray-400">
-              {tournament?.name} • {auctionType?.toUpperCase()}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span className="px-3 py-1 rounded-full text-xs bg-green-500/20 text-green-400">
-              {auctionStatus}
-            </span>
-            <button className="px-4 py-2 text-sm rounded-lg bg-purple-600 hover:bg-purple-700">
-              {auctionStatus === "ongoing" ? "Join Auction" : "Notify Me"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ================= Main Layout ================= */}
-      <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-
-        {/* ================= LEFT ================= */}
-        <div className="space-y-8">
-
-          {/* Overview */}
-          <Section title="Overview">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard label="Teams" value={teams?.length || 0} />
-              <StatCard label="Budget / Team" value={`₹${auctionRules?.budgetCap}`} />
-              <StatCard label="Min Bid" value={`₹${auctionRules?.minimumBid}`} />
-              <StatCard
-                label="Players / Team"
-                value={auctionRules?.maxPlayersPerTeam}
+    <div className="min-h-screen bg-gradient-to-br from-[var(--color-primary)] via-[var(--color-primary-dark)] to-[var(--color-primary-darker)] text-white">
+      <Header />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        {/* HERO */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative h-56 rounded-2xl overflow-hidden border border-white/10"
+        >
+          <img
+            src={tournamentId.bannerLogo}
+            alt="banner"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-6 flex items-end">
+            <div className="flex items-center gap-4">
+              <img
+                src={tournamentId.logo}
+                alt="logo"
+                className="h-16 w-16 rounded-full bg-white object-cover border-2 border-white/20"
               />
-            </div>
-          </Section>
-
-          {/* Tournament Info */}
-          <Section title="Tournament Details">
-            <div className="rounded-xl bg-white/5 border border-white/10 p-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-gray-400">Location</p>
-                <p>{tournament?.cityTown} • {tournament?.groundName}</p>
-              </div>
-              <div>
-                <p className="text-gray-400">Match Type</p>
-                <p>{tournament?.matchType}</p>
-              </div>
-              <div>
-                <p className="text-gray-400">Organizer</p>
-                <p>{tournament?.organizerName}</p>
-              </div>
-              <div>
-                <p className="text-gray-400">Entry Fees</p>
-                <p className="text-green-400">₹{tournament?.entryFees}</p>
+              <div className="space-y-1">
+                <h1 className="text-2xl font-bold text-white leading-tight">
+                  {auctionData.auctionName}
+                </h1>
+                <p className="text-sm text-white/70">
+                  {tournamentId?.name} • {auctionData.cityTown}
+                </p>
+                <span className={`inline-block px-3 py-1 text-xs rounded-full font-semibold ${
+                  auctionData.auctionStatus === 'ongoing' 
+                    ? 'bg-green-500/80 text-white' 
+                    : auctionData.auctionStatus === 'completed'
+                    ? 'bg-blue-500/80 text-white'
+                    : 'bg-[var(--color-warm)]/80 text-[var(--color-primary-darker)]'
+                }`}>
+                  {auctionData.auctionStatus.toUpperCase()}
+                </span>
               </div>
             </div>
-          </Section>
+          </div>
+        </motion.div>
 
-          {/* Teams Preview */}
-          <Section title="Teams">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {teams?.slice(0, 4)?.map((team) => (
-                <div
-                  key={team.teamId}
-                  className="rounded-xl bg-white/5 border border-white/10 p-4 flex justify-between"
-                >
-                  <div>
-                    <p className="font-medium">{team.teamName}</p>
-                    <p className="text-xs text-gray-400">
-                      Players: {team.currentSquadSize}/{auctionRules?.maxPlayersPerTeam}
-                    </p>
-                  </div>
-                  <p className="text-green-400 font-semibold">
-                    ₹{team.remainingBudget}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </Section>
-
+        {/* STATS */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard label="Teams" value={teams.length} />
+          <StatCard label="Budget Cap" value={`₹${auctionRules.budgetCap / 100000}L`} />
+          <StatCard label="Match Type" value={auctionData.matchType?.toUpperCase()} />
+          <StatCard label="Ball Type" value={tournamentId.ballType.charAt(0)?.toUpperCase() + tournamentId.ballType.slice(1)} />
         </div>
 
-        {/* ================= RIGHT (Sticky) ================= */}
-        <div className="space-y-4 sticky top-20">
-
-          <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-            <p className="text-xs text-gray-400 flex items-center gap-2">
-              <Calendar className="w-4 h-4" /> Auction Time
-            </p>
-            <p className="font-semibold mt-1">{formatDate(auctionDate)}</p>
+        {/* TOURNAMENT */}
+        <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition">
+          <h2 className="text-lg font-bold mb-4 text-[var(--color-warm)]">Tournament Details</h2>
+          <div className="grid sm:grid-cols-2 gap-4 text-sm text-white/80">
+            <div>
+              <p className="text-xs text-white/60 mb-1">📍 Ground</p>
+              <p className="font-semibold text-white">{tournamentId.groundName}</p>
+            </div>
+            <div>
+              <p className="text-xs text-white/60 mb-1">📅 Duration</p>
+              <p className="font-semibold text-white">{tournamentId.date}</p>
+            </div>
+            <div>
+              <p className="text-xs text-white/60 mb-1">👤 Organizer</p>
+              <p className="font-semibold text-white">{tournamentId.organizerName}</p>
+            </div>
+            <div>
+              <p className="text-xs text-white/60 mb-1">💰 Entry Fee</p>
+              <p className="font-semibold text-white">₹{tournamentId.entryFees}</p>
+            </div>
+            <div>
+              <p className="text-xs text-white/60 mb-1">🏟️ Pitch Type</p>
+              <p className="font-semibold text-white">{tournamentId.pitchType.charAt(0).toUpperCase() + tournamentId.pitchType.slice(1)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-white/60 mb-1">🏏 Tournament Type</p>
+              <p className="font-semibold text-white">{tournamentId.tournamentType.charAt(0).toUpperCase() + tournamentId.tournamentType.slice(1)}</p>
+            </div>
           </div>
+        </div>
 
-          <div className="rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 p-4">
-            <p className="text-xs text-gray-300">Status</p>
-            <p className="text-lg font-semibold">{auctionStatus}</p>
+        {/* TEAMS */}
+        <div>
+          <h2 className="text-lg font-bold mb-4 text-[var(--color-warm)]">Teams</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {teams.map((team) => (
+              <motion.div
+                key={team.teamId}
+                whileHover={{ y: -4, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 200 }}
+                className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-4 hover:bg-white/10 transition"
+              >
+                <h3 className="text-base font-semibold text-white">{team.teamName}</h3>
+                <p className="text-xs text-white/60 mt-1">
+                  ₹{team.remainingBudget} left • {team.currentSquadSize} players
+                </p>
+              </motion.div>
+            ))}
           </div>
+        </div>
 
-          {currentPlayer && (
-            <div className="rounded-xl bg-white/5 border border-purple-500/30 p-4">
-              <p className="text-xs text-gray-400">Current Player</p>
-              <p className="font-semibold">{currentPlayer.name}</p>
-              <p className="text-green-400 font-bold mt-1">
-                ₹{currentPlayer.currentBid}
+        {/* RULES */}
+        <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition">
+          <h2 className="text-lg font-bold mb-4 text-[var(--color-warm)]">Auction Rules</h2>
+          <div className="grid sm:grid-cols-2 gap-3 text-sm text-white/80">
+            <p>• Min Bid: ₹{auctionRules.minimumBid}</p>
+            <p>• Increment: ₹{auctionRules.biddingIncrement}</p>
+            <p>• Min Players: {auctionRules.minPlayersPerTeam}</p>
+            <p>• Max Players: {auctionRules.maxPlayersPerTeam}</p>
+            <p>• Max Foreign: {auctionRules.maxForeignPlayers}</p>
+            <p>• Max Wicket Keepers: {auctionRules.maxWicketKeepers}</p>
+            <p>• RTM: {auctionRules.rtmEnabled ? "✓ Enabled" : "✗ Disabled"}</p>
+            <p>• Unsold Re-entry: {auctionRules.unsoldPlayerReEntry ? "✓ Enabled" : "✗ Disabled"}</p>
+          </div>
+        </div>
+
+        {/* AUCTION STATUS */}
+        <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition">
+          <h2 className="text-lg font-bold mb-4 text-[var(--color-warm)]">Auction Status</h2>
+          <div className="grid sm:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-xs text-white/60 mb-1">Auction Type</p>
+              <p className="font-semibold text-white capitalize">{auctionData.auctionType === 'auto' ? '⚡ Automated' : '👨 Manual'} Auction</p>
+            </div>
+            <div>
+              <p className="text-xs text-white/60 mb-1">Bidding Status</p>
+              <p className={`font-semibold ${auctionData.isBiddingActive ? 'text-green-400' : 'text-red-400'}`}>
+                {auctionData.isBiddingActive ? '🟢 Active' : '🔴 Paused'}
               </p>
             </div>
-          )}
+            <div>
+              <p className="text-xs text-white/60 mb-1">Started At</p>
+              <p className="font-semibold text-white">{new Date(auctionData.startedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+            </div>
+            <div>
+              <p className="text-xs text-white/60 mb-1">Total Teams</p>
+              <p className="font-semibold text-white">{teams.length} Teams</p>
+            </div>
+          </div>
+        </div>
 
-          {stream?.isLive && (
-            <div className="rounded-xl bg-red-500/10 border border-red-500/30 p-4 flex items-center gap-3">
-              <PlayCircle className="w-5 h-5 text-red-400" />
+        {/* CURRENT PLAYER */}
+        {auctionData.currentPlayer && (
+          <div className="bg-gradient-to-r from-[var(--color-warm)]/20 to-[#FF6B35]/20 border border-[var(--color-warm)]/30 rounded-2xl p-6">
+            <h2 className="text-lg font-bold mb-4 text-[var(--color-warm)]">🎯 Currently Auctioning</h2>
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
+                <span className="text-2xl">🏏</span>
+              </div>
               <div>
-                <p className="font-semibold">Live Now</p>
-                <p className="text-xs text-gray-400">
-                  {stream?.viewers} viewers
-                </p>
+                <p className="text-xs text-white/60">Player ID</p>
+                <p className="font-bold text-white text-lg">{auctionData.currentPlayer.playerId}</p>
+                <p className="text-xs text-white/60 mt-2">Started: {new Date(auctionData.currentPlayer.startedAt).toLocaleTimeString('en-IN')}</p>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* AWARDS */}
+        <div>
+          <h2 className="text-lg font-bold mb-4 text-[var(--color-warm)]">Awards</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {auctionData.tournament.awardList.map((award, i) => (
+              <motion.div
+                key={i}
+                whileHover={{ y: -4 }}
+                className="bg-gradient-to-br from-[var(--color-warm)]/80 to-[#FF6B35]/80 rounded-2xl p-4 border border-white/10"
+              >
+                <p className="text-xs font-medium ]">{award.award}</p>
+                <p className="text-sm font-semibold text-white mt-1">{award.cashValue}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* STREAM */}
+        <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 flex justify-between items-center hover:bg-white/10 transition">
+          <div>
+            <p className="text-sm font-medium text-white">Live Stream</p>
+            <p className="text-xs text-white/60">{auctionData.stream.platform}</p>
+          </div>
+          <span
+            className={`px-4 py-2 rounded-xl text-xs font-bold ${
+              auctionData.stream.isLive
+                ? "bg-red-500/80 text-white animate-pulse"
+                : "bg-white/10 text-white/60"
+            }`}
+          >
+            {auctionData.stream.isLive ? "🔴 LIVE" : "⚫ OFFLINE"}
+          </span>
+        </div>
+
+        {/* CTA */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
+          {/* <button className="px-8 py-3 bg-gradient-to-r from-[var(--color-warm)] to-[#FF6B35] text-[var(--color-primary-darker)] font-bold rounded-xl hover:shadow-lg hover:shadow-[var(--color-warm)]/50 transition">
+            Explore Teams
+          </button> */}
+          
+          {localStorage.getItem("playerId") && (
+            <button
+              onClick={() => setRegisterPopupOpen(true)}
+              disabled={userRole.auctionPlayer}
+              className={`px-8 py-3 font-bold rounded-xl transition ${
+                userRole.auctionPlayer
+                  ? "bg-gray-500 text-gray-200 cursor-not-allowed"
+                  : "bg-white text-[var(--color-primary-darker)] hover:shadow-lg hover:shadow-white/50"
+              }`}
+            >
+              {userRole.auctionPlayer ? "✓ Already Registered" : "Register for Auction"}
+            </button>
           )}
-
-          <button className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 font-semibold">
-            {auctionStatus === "ongoing" ? "Join Auction" : "Set Reminder"}
-          </button>
-
         </div>
       </div>
+
+      {/* Register Popup */}
+      <RegisterPopup
+        isOpen={registerPopupOpen}
+        onClose={() => setRegisterPopupOpen(false)}
+        onConfirm={enrollPlayer}
+        tournamentId={auctionId}
+      />
     </div>
   );
-};
-
-export default AuctionDetailsPage;
+}

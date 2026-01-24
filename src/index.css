@@ -11,6 +11,7 @@
     --color-crickbroPurple: #8b5cf6;
 
     --color-primary: #0f3e3c;
+    --color-primary-light: #195b58;
     --color-primary-dark: #072a27;
     --color-primary-darker: #021b17;
 
@@ -18,6 +19,12 @@
     --color-accent-2: #60a5fa;
     --color-warm: #F0C75E;
     --color-ivory: #FFF9EC;
+
+    --color-header-1:#263574;
+    --color-header-2:#182046;
+    --color-header-text: #FFFFFF;
+    --color-header-border: #3A4A7A;
+    --color-button-border: #D4AF37;
 
     /* ===== Fonts ===== */
     --font-oswald: "Oswald", sans-serif;

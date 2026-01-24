@@ -13,6 +13,7 @@ import {
   getSelectedPlayers,
   getUnassignedinCategory,
 } from "../../../redux/actions";
+import { a } from "framer-motion/client";
 
 const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
   const dispatch = useDispatch();
@@ -62,8 +63,8 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
   const [searchUnassign, setSearchUnassign] = useState("");
   const [searchAssign, setSearchAssign] = useState("");
 
-  const [auctionTotalPages, setAuctionTotalPages] = useState(1);
-  const [auctionTotal, setAuctionTotal] = useState(0);
+  // const [auctionTotalPages, setAuctionTotalPages] = useState(1);
+  // const [auctionTotal, setAuctionTotal] = useState(0);
   const [playerTypes, setPlayerTypes] = useState([
     { label: "Batsman", value: "batsman", color: "text-cyan-400" },
     { label: "Bowler", value: "bowler", color: "text-emerald-400" },
@@ -94,6 +95,10 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
 
   const auctionPlayers = assignedPlayers?.list || [];
   const auctionPage=assignedPlayers?.page
+  const auctionTotalPages = assignedPlayers?.pages || 1;
+  const auctionTotal=assignedPlayers?.total || 0;
+
+
 
   const [pendingDelete, setPendingDelete] = useState(null);
 
@@ -811,11 +816,11 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
       </div>
 
       {/* Main Content */}
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-3">
         {activeSubTab === "unassignedSelected" ? (
           <>
             {/* Unassigned Section */}
-            <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 space-y-6 backdrop-blur-sm">
+            <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-4 space-y-3 backdrop-blur-sm">
               {renderFilterRow("unassigned")}
               
               <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-gray-800">
@@ -939,7 +944,7 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
         ) : (
           <>
             {/* Auction Players Section */}
-            <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 space-y-6 backdrop-blur-sm">
+            <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-4 space-y-3 backdrop-blur-sm">
               {renderFilterRow("auction")}
               
               <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-gray-800">
@@ -1100,7 +1105,7 @@ const SelectedAuctionManager = ({ auctionId, auctionTypeTrial }) => {
       {/* Delete Confirmation Modal */}
       {deleteCandidate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-5">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-4 w-full max-w-md space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-red-400 flex items-center gap-2">
                 <Trash2 className="h-5 w-5" />

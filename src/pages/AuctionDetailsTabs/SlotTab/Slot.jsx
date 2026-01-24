@@ -356,14 +356,14 @@ const Slot = ({ auctionId }) => {
 
       {/* Slots Table */}
       {slotLocalList.length === 0 ? (
-        <div className="text-center py-12 bg-gray-900/50 rounded-xl border border-gray-800">
-          <div className="text-gray-400 mb-2">No slots available</div>
-          <div className="text-sm text-gray-500">
+        <div className="text-center py-12 bg-[var(--color-primary)] rounded-xl border border-gray-800">
+          <div className="text-gray-200 mb-2">No slots available</div>
+          <div className="text-sm text-gray-300">
             Create your first slot to get started
           </div>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/30 backdrop-blur-sm">
+        <div className="overflow-hidden rounded-xl border border-gray-800 bg-[var(--color-primary)] backdrop-blur-sm">
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead className="bg-gradient-to-r from-gray-900 to-gray-800">
@@ -378,7 +378,7 @@ const Slot = ({ auctionId }) => {
                     Venue / City
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-gray-800">
-                    Status
+                    Sessions
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-gray-800">
                     Created
@@ -405,15 +405,15 @@ const Slot = ({ auctionId }) => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-mono text-cyan-400 bg-cyan-900/20 px-2 py-1 rounded inline-block">
+                        <div className="text-sm font-mono text-cyan-200 bg-cyan-800 px-2 py-1 rounded inline-block">
                           {slot.slotCode}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-300">
+                        <div className="text-sm text-gray-200">
                           {slot.location?.venue}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-400">
                           {slot.location?.city}
                         </div>
                       </td>
@@ -425,7 +425,7 @@ const Slot = ({ auctionId }) => {
                               : "bg-gray-800/50 text-gray-400 border border-gray-700"
                           }`}
                         >
-                          {slot.status}
+                          {slot.sessions ? slot.sessions.length : 0}{" "}Sessions
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">

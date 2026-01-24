@@ -210,15 +210,15 @@ export default function Rating({ onClose, auctionId, details, fetch }) {
   };
 
   return (
-    <div className=" bg-black/60 z-50 flex items-center justify-center backdrop-blur">
+    <div className="  z-50 flex items-center justify-center backdrop-blur">
       <div className="w-full card-glass relative px-5 py-4 max-h-[90vh] overflow-y-auto">
         {/* CLOSE */}
-        <button
+        {/* <button
           onClick={onClose}
           className="absolute top-3 right-3 text-white/60 hover:text-red-400"
         >
           <X size={18} />
-        </button>
+        </button> */}
 
         {/* HEADER */}
         <h2 className="text-base font-oswald tracking-wide text-crickbroYellow mb-1">

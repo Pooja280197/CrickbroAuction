@@ -1,5 +1,7 @@
 const SlotMiniCard = ({ slot, onClick }) => {
-  const session = slot.sessions?.[0];
+  console.log(slot,"slot")
+  const session = slot.sessions && slot.sessions.length > 0 ? slot.sessions[0] : null;
+
 
   return (
     <div

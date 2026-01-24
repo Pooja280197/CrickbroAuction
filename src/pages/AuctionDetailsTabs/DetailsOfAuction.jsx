@@ -8,11 +8,14 @@ import {
   PlayCircle,
   Radio,
   Settings,
+  CircleDot,
 } from "lucide-react";
 import { fetchAuctionDetails } from "../../redux/actions";
+import { useNavigate } from "react-router-dom";
 
 const DetailsOfAuction = ({ auctionId }) => {
   const dispatch = useDispatch();
+  const navigate =useNavigate()
 
   const isLoading = useSelector(
     (state) => state.loading?.auctionDetails || false
@@ -42,25 +45,21 @@ const DetailsOfAuction = ({ auctionId }) => {
     auctionStatus,
     auctionType,
     isBiddingActive,
-    players,
+    // players,
     teams,
     auctionRules,
     // autoSettings,
     stream,
-    
   } = auctionData;
 
-  console.log(auctionData,"auction")
+  console.log(auctionData, "auction");
 
   return (
     <div className="space-y-8">
-
       {/* ================= HEADER ================= */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-white">
-            {auctionName}
-          </h2>
+          <h2 className="text-2xl font-semibold text-white">{auctionName}</h2>
           <p className="text-sm text-white/60 mt-1">
             Auction Type: {auctionType}
           </p>
@@ -92,11 +91,21 @@ const DetailsOfAuction = ({ auctionId }) => {
           value={formatDate(startedAt)}
         /> */}
         <Stat icon={Users} label="Teams" value={teams?.length} />
-        <Stat icon={Users} label="Players" value={players?.length} />
+        <div>{""}</div>
+          <button
+          onClick={() => navigate(`/live-auction/${auctionId}`)}
+          className="gap-2 bg-red-600 hover:bg-red-700 text-white rounded-lg h-12 flex items-center justify-center"
+        >
+          <CircleDot className="w-4 h-4 text-white" />
+          Live Auction
+        </button>
+      
+        {/* {<Stat icon={Users} label="Players" value={players?.length} />} */}
       </div>
+      
 
       {/* ================= RULES ================= */}
-      <div className="rounded-2xl bg-black/70 backdrop-blur-md border border-white/10 p-6">
+      <div className="rounded-2xl bg-[var(--color-primary)] backdrop-blur-md border border-white/10 p-6">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <Gavel className="w-5 h-5 text-[var(--color-warm)]" />
           Auction Rules
@@ -198,7 +207,7 @@ export default DetailsOfAuction;
 /* ================= SMALL COMPONENTS ================= */
 
 const Stat = ({ icon: Icon, label, value }) => (
-  <div className="rounded-xl bg-black/70 backdrop-blur-md border border-white/10 p-4">
+  <div className="rounded-xl bg-[var(--color-primary)] backdrop-blur-md border border-white/10 p-4">
     <Icon className="w-5 h-5 text-[var(--color-warm)] mb-2" />
     <p className="text-xs text-white/60">{label}</p>
     <p className="font-semibold text-white">{value}</p>

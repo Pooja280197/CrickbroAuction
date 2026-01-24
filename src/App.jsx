@@ -12,6 +12,7 @@ import CreateEditAuction from './pages/CreateEditAuction'
 import AdminAuctionControl from './pages/Live_Auction/admin/AdminAuctionControl'
 import BiddingPanel from '../src/pages/Live_Auction/TeamOwner/BiddingPanel'
 import AuctionDetailsForUser from '../src/pages/AuctionDetailsForUser'
+import LandingPage from './pages/Landing Page/LandingPage'
 
 
 function AppContent() {
@@ -30,6 +31,8 @@ function AppContent() {
       <Route exact path="/editAuction/:auctionId" element={<CreateEditAuction/>}/>
       <Route exact path="/team-bidding/:auctionId" element={<BiddingPanel/>}/>  
       <Route exact path="/viewAuction/:auctionId" element={<AuctionDetailsForUser/>}/>  
+      <Route exact path="/viewAuction/:auctionId" element={<AuctionDetailsForUser/>}/>  
+      <Route exact path="/auction-registration" element={<LandingPage/>}/>  
     </Routes>
     </BrowserRouter>
   
